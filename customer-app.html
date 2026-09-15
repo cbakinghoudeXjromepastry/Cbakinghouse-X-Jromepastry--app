@@ -128,7 +128,516 @@
   .status-badge.completed{ background:#E1EDD8; color:var(--jrome-deep); }
   .status-badge.cancelled{ background:#F3DCDC; color:#A24444; }
   .order-items{ font-size:12px; color:var(--muted); margin-top:14px; line-height:1.6; }
-< truncated lines 131-640 >
+  .order-total{ display:flex; justify-content:space-between; margin-top:10px; font-weight:700; font-size:13.5px; border-top:1px dashed var(--line); padding-top:10px; }
+
+  .toast{ position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-60px); background:var(--ink); color:var(--cream); padding:11px 20px; border-radius:999px; font-size:12.5px; font-weight:700; z-index:100; transition:transform .3s ease; box-shadow:0 8px 20px rgba(0,0,0,.2); text-align:center; max-width:320px; }
+  .toast.show{ transform:translateX(-50%) translateY(0); }
+
+  .loading{ text-align:center; padding:60px 20px; color:var(--muted); font-size:13px; }
+
+  /* ---------- Account screen ---------- */
+  .auth-toggle{ display:flex; margin: 16px 20px 4px; background:var(--white); border-radius:999px; padding:5px; border:1.5px solid var(--line); }
+  .auth-toggle button{ flex:1; padding:10px 8px; border-radius:999px; font-size:13px; color:var(--muted); }
+  .auth-toggle button.active{ background:var(--ink); color:var(--cream); }
+  .err-text{ color:#A24444; font-size:12px; padding: 0 20px; }
+  .wallet-hero{ margin:16px 20px; padding:24px 22px; border-radius:24px; background:linear-gradient(135deg, var(--sand) 0%, var(--cream) 100%); border:1.5px solid var(--line); text-align:center; }
+  .wallet-hero .lbl{ font-size:12.5px; color:var(--muted); font-weight:700; }
+  .wallet-hero .num{ font-size:40px; margin:4px 0 2px; color:var(--gold); }
+  .wallet-hero .sub{ font-size:12px; color:var(--muted); }
+  .referral-card{ margin:16px 20px; background:var(--ink); color:var(--cream); border-radius:22px; padding:20px; }
+  .referral-card h3{ font-size:15px; color:var(--cream); margin-bottom:6px; }
+  .referral-card p{ font-size:12px; color:#D9C8BE; line-height:1.5; margin-bottom:14px; }
+  .code-row{ display:flex; background:rgba(255,255,255,0.1); border-radius:14px; padding:12px 14px; align-items:center; justify-content:space-between; }
+  .code-row .code{ font-family:'Fraunces',serif; font-size:16px; letter-spacing:1px; }
+  .code-row button{ background:var(--gold); color:var(--ink); padding:7px 14px; border-radius:999px; font-size:11.5px; }
+  .wallet-tx{ display:flex; justify-content:space-between; padding:10px 20px; border-bottom:1px solid var(--line); font-size:12.5px; }
+  .wallet-tx .amt.pos{ color:var(--jrome-deep); font-weight:700; }
+  .wallet-tx .amt.neg{ color:#A24444; font-weight:700; }
+  .member-order{ margin:12px 20px; background:var(--white); border-radius:18px; border:1.5px solid var(--line); padding:14px 16px; }
+  .member-order .oh{ display:flex; justify-content:space-between; margin-bottom:6px; }
+  .wa-row{ display:flex; gap:10px; margin:0 20px 18px; }
+  .wa-row .primary-btn{ margin:0; }
+  .qr-card{ margin:0 20px 14px; background:var(--white); border-radius:20px; border:1.5px solid var(--line); padding:16px; text-align:center; }
+  .qr-card img{ width:100%; max-width:220px; border-radius:12px; margin:8px 0; }
+  .qr-card .brand-lbl{ font-weight:700; font-size:13px; }
+  .qr-save-link{ display:inline-block; margin-top:4px; font-size:12px; color:var(--cbh-deep); text-decoration:underline; font-weight:700; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <section class="screen active" id="screen-home">
+    <div class="topbar">
+      <div class="kicker">Cbakinghouse × J.ROME Pastry</div>
+      <h1>Two brands, one little bakery</h1>
+    </div>
+
+    <div class="brand-switch">
+      <button class="active cbh" data-brand="cbakinghouse" onclick="setBrand('cbakinghouse')">Cbakinghouse</button>
+      <button data-brand="jrome" onclick="setBrand('jrome')">J.ROME Pastry</button>
+    </div>
+    <div class="brand-sub" id="brand-sub">Warm, everyday breads baked in small batches each morning.</div>
+
+    <div class="chips" id="chips"></div>
+    <div id="grid-wrap"><div class="loading">Loading fresh bakes…</div></div>
+  </section>
+
+  <section class="screen" id="screen-cart">
+    <div class="topbar"><h1>Your basket</h1></div>
+    <div id="cart-body"></div>
+  </section>
+
+  <section class="screen" id="screen-orders">
+    <div class="topbar"><h1>Track your order</h1></div>
+    <div class="section-sub" style="padding-top:0;">No account needed — just your order number and phone number.</div>
+    <div class="field-block"><label>Order number</label><input type="text" id="track-order-number" placeholder="e.g. TS1004"></div>
+    <div class="field-block"><label>Phone number</label><input type="text" id="track-phone" placeholder="e.g. 0121234567"></div>
+    <button class="primary-btn" onclick="trackOrder()">Check status</button>
+    <div id="track-result"></div>
+  </section>
+
+  <section class="screen" id="screen-about">
+    <div class="topbar"><h1>About us</h1></div>
+    <div class="section-sub" style="padding-top:0; line-height:1.6;">
+      Cbakinghouse and J.ROME Pastry are two brands from one little home bakery, run together by a couple — warm breads on one side, delicate cakes and desserts on the other. Order from both at once, we'll get it ready for you.
+    </div>
+    <div class="section-title">Reach us on WhatsApp</div>
+    <div class="wa-row" style="flex-direction:column;">
+      <a id="wa-cbh-link" class="primary-btn wa" style="text-decoration:none;" href="#" target="_blank">Message Cbakinghouse</a>
+      <a id="wa-jrome-link" class="primary-btn wa" style="text-decoration:none;" href="#" target="_blank">Message J.ROME Pastry</a>
+    </div>
+
+    <div class="section-title">Pay via DuitNow QR</div>
+    <div class="section-sub" style="padding-top:0;">Scan the QR for the brand you're ordering from, then send us your payment screenshot on WhatsApp so we can confirm your order.</div>
+    <div class="qr-card">
+      <div class="brand-lbl">Cbakinghouse</div>
+      <img id="qr-cbh" alt="Cbakinghouse DuitNow QR">
+      <br><a id="qr-cbh-save" class="qr-save-link" download="cbakinghouse-duitnow-qr.jpg">Save QR to Photos</a>
+    </div>
+    <div class="qr-card">
+      <div class="brand-lbl">J.ROME Pastry</div>
+      <img id="qr-jrome" alt="J.ROME Pastry DuitNow QR">
+      <br><a id="qr-jrome-save" class="qr-save-link" download="jrome-pastry-duitnow-qr.jpg">Save QR to Photos</a>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-account">
+    <div class="topbar"><h1>Your account</h1></div>
+    <div id="account-body"></div>
+  </section>
+
+  <div class="cart-pill hidden" id="cart-pill" onclick="goTo('cart')">
+    <span><span class="cnt" id="pill-cnt">0</span>View basket</span>
+    <span id="pill-total">RM0.00</span>
+  </div>
+
+  <nav class="bottomnav">
+    <button class="navbtn active" data-tab="home" onclick="goTo('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11L12 4l8 7"/><path d="M6 10v9a1 1 0 001 1h4v-6h2v6h4a1 1 0 001-1v-9"/></svg>
+      Home <span class="dot"></span>
+    </button>
+    <button class="navbtn" data-tab="cart" onclick="goTo('cart')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M3 4h2l2.2 11.2a1.5 1.5 0 001.5 1.3h7.6a1.5 1.5 0 001.5-1.2L20 8H6"/></svg>
+      Basket <span class="dot"></span>
+    </button>
+    <button class="navbtn" data-tab="orders" onclick="goTo('orders')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+      Track <span class="dot"></span>
+    </button>
+    <button class="navbtn" data-tab="about" onclick="goTo('about')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+      About <span class="dot"></span>
+    </button>
+    <button class="navbtn" data-tab="account" onclick="goTo('account')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1.5-4 4-6 7-6s5.5 2 7 6"/></svg>
+      Account <span class="dot"></span>
+    </button>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ---------------- Supabase ---------------- */
+const SUPABASE_URL = 'https://sinkciczsxumobxmuvwa.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_LRIyfKJD8hx-ul1qLIyKwg_kgwubg5e';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const QR_CODES = { cbakinghouse: 'https://sinkciczsxumobxmuvwa.supabase.co/storage/v1/object/public/qr-codes/qr-cbakinghouse.jpg?t=' + Date.now(), jrome: 'https://sinkciczsxumobxmuvwa.supabase.co/storage/v1/object/public/qr-codes/qr-jrome.jpg?t=' + Date.now() };
+const ICONS = {
+  loaf: `<svg viewBox="0 0 64 64"><path d="M8 34c0-14 10-22 24-22s24 8 24 22v6c0 8-8 14-24 14S8 48 8 40v-6z" fill="#E8B27E"/></svg>`,
+  bagel: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="20" fill="#E3B074"/><circle cx="32" cy="32" r="8" fill="#FBF6EE"/></svg>`,
+  roll: `<svg viewBox="0 0 64 64"><ellipse cx="32" cy="34" rx="20" ry="14" fill="#F0C79A"/></svg>`,
+  waffle: `<svg viewBox="0 0 64 64"><rect x="10" y="14" width="44" height="36" rx="6" fill="#E9C27A"/><path d="M10 26h44M10 38h44M22 14v36M32 14v36M42 14v36" stroke="#C99850" stroke-width="2"/></svg>`,
+  pastry: `<svg viewBox="0 0 64 64"><path d="M10 40c4-18 18-26 30-22 8 3 12 10 10 14-6-4-14-4-18 2-3 5-1 11 4 14-10 4-22 2-26-8z" fill="#EAC077"/></svg>`,
+  cake: `<svg viewBox="0 0 64 64"><path d="M10 46L32 12l22 34z" fill="#F5C9D6"/><circle cx="32" cy="16" r="3" fill="#E6688E"/></svg>`,
+  daifuku: `<svg viewBox="0 0 64 64"><circle cx="32" cy="34" r="18" fill="#F6D2DE"/></svg>`,
+  mochi: `<svg viewBox="0 0 64 64"><circle cx="32" cy="34" r="18" fill="#EFA9C4"/></svg>`,
+  choc: `<svg viewBox="0 0 64 64"><rect x="12" y="18" width="40" height="28" rx="6" fill="#8B5A3C"/><rect x="18" y="24" width="28" height="16" rx="3" fill="#B98A5E"/></svg>`,
+  basket: `<svg viewBox="0 0 64 64"><path d="M14 26h36l-4 26a4 4 0 01-4 3H22a4 4 0 01-4-3z" fill="#F6DED6"/></svg>`
+};
+function iconFor(catName){
+  const c = (catName||'').toLowerCase();
+  if(c.includes('bagel')) return ICONS.bagel;
+  if(c.includes('roll')) return ICONS.roll;
+  if(c.includes('waffle')) return ICONS.waffle;
+  if(c.includes('pastr')) return ICONS.pastry;
+  if(c.includes('bread') || c.includes('sourdough')) return ICONS.loaf;
+  if(c.includes('cake') || c.includes('cheesecake')) return ICONS.cake;
+  if(c.includes('daifuku')) return ICONS.daifuku;
+  if(c.includes('mochi')) return ICONS.mochi;
+  if(c.includes('chocolate')) return ICONS.choc;
+  return ICONS.pastry;
+}
+
+/* ---------------- State ---------------- */
+let state = {
+  brand: 'cbakinghouse',
+  category: 'All',
+  cart: {}, // product_id -> {qty, product}
+  fulfillment: 'delivery',
+  address: '', name:'', phone:'', notes:'', date:'', time:'',
+  brands: [], categories: [], products: [],
+  settings: { delivery_fee: 4.5, free_delivery_threshold: 35, whatsapp_cbakinghouse: '601110821733', whatsapp_jrome: '601176348554', qr_cbakinghouse_url: '', qr_jrome_url: '' },
+  session: null, profile: null, useWallet: 0, couponCode: '', authMode: 'login', authErr: ''
+};
+
+async function loadData(){
+  const [{data: brands}, {data: categories}, {data: products}, {data: settingsRows}] = await Promise.all([
+    sb.from('brands').select('*'),
+    sb.from('categories').select('*').order('sort_order'),
+    sb.from('products').select('*, product_flavours(*), categories(name)').neq('status','unavailable').order('sort_order'),
+    sb.from('app_settings').select('*').eq('id',1)
+  ]);
+  state.brands = brands || [];
+  state.categories = categories || [];
+  state.products = products || [];
+  if(settingsRows && settingsRows[0]) state.settings = settingsRows[0];
+  renderChips();
+  renderGrid();
+  renderAboutSettings();
+}
+
+function renderAboutSettings(){
+  const s = state.settings;
+  const cbhWa = document.getElementById('wa-cbh-link');
+  const jromeWa = document.getElementById('wa-jrome-link');
+  if(cbhWa) cbhWa.href = `https://wa.me/${s.whatsapp_cbakinghouse||''}`;
+  if(jromeWa) jromeWa.href = `https://wa.me/${s.whatsapp_jrome||''}`;
+  const qrCbh = document.getElementById('qr-cbh');
+  const qrJrome = document.getElementById('qr-jrome');
+  const qrCbhSave = document.getElementById('qr-cbh-save');
+  const qrJromeSave = document.getElementById('qr-jrome-save');
+  const qrCbhUrl = s.qr_cbakinghouse_url || QR_CODES.cbakinghouse;
+  const qrJromeUrl = s.qr_jrome_url || QR_CODES.jrome;
+  if(qrCbh){ qrCbh.src = qrCbhUrl; qrCbhSave.href = qrCbhUrl; }
+  if(qrJrome){ qrJrome.src = qrJromeUrl; qrJromeSave.href = qrJromeUrl; }
+}
+
+function brandId(slug){ return (state.brands.find(b=>b.slug===slug)||{}).id; }
+
+function setBrand(slug){
+  state.brand = slug; state.category = 'All';
+  document.querySelectorAll('.brand-switch button').forEach(btn=>btn.classList.remove('active'));
+  document.querySelector(`.brand-switch button[data-brand="${slug}"]`).classList.add('active');
+  document.getElementById('brand-sub').textContent = slug==='cbakinghouse'
+    ? 'Warm, everyday breads baked in small batches each morning.'
+    : 'Delicate cakes and desserts made for slow afternoons.';
+  renderChips(); renderGrid();
+}
+function setCategory(c){ state.category = c; renderChips(); renderGrid(); }
+
+function renderChips(){
+  const bId = brandId(state.brand);
+  const cats = state.categories.filter(c=>c.brand_id===bId).map(c=>c.name);
+  const wrap = document.getElementById('chips');
+  wrap.innerHTML = ['All', ...cats].map(c=>
+    `<button class="chip ${c===state.category?'active':''}" onclick="setCategory('${c.replace(/'/g,"\\'")}')">${c}</button>`
+  ).join('');
+}
+
+function renderGrid(){
+  const bId = brandId(state.brand);
+  const wrapOuter = document.getElementById('grid-wrap');
+  const items = state.products.filter(p=>{
+    if(p.brand_id!==bId) return false;
+    if(state.category!=='All' && (p.categories?.name!==state.category)) return false;
+    return true;
+  });
+  if(items.length===0){
+    wrapOuter.innerHTML = `<div class="empty-state"><h3>Nothing here yet</h3><p>Check back soon — new bakes are on the way.</p></div>`;
+    return;
+  }
+  const bg = state.brand==='cbakinghouse' ? 'var(--sand)' : '#EAF0E3';
+  wrapOuter.innerHTML = `<div class="grid">${items.map(p=>{
+    const qty = state.cart[p.id]?.qty || 0;
+    const soldOut = p.status === 'sold_out';
+    const artStyle = p.photo_url ? `style="background-image:url('${p.photo_url}');background-color:${bg}"` : `style="background:${bg}"`;
+    return `
+    <div class="card">
+      <div class="art" ${artStyle}>
+        ${p.photo_url ? '' : iconFor(p.categories?.name)}
+        ${soldOut ? '<div class="soldout-badge">SOLD OUT</div>' : ''}
+      </div>
+      <div class="info">
+        <div class="name">${p.name}</div>
+        <div class="desc">${p.description||''}</div>
+        <div class="bottom">
+          <span class="price">RM${Number(p.price).toFixed(2)}</span>
+          ${soldOut ? `<button class="add-btn" disabled>+</button>` :
+            qty===0
+            ? `<button class="add-btn" onclick="addItem('${p.id}')">+</button>`
+            : `<div class="qty-stepper"><button onclick="decItem('${p.id}')">−</button><span>${qty}</span><button onclick="addItem('${p.id}')">+</button></div>`
+          }
+        </div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+/* ---------------- Cart ---------------- */
+function addItem(id){
+  const product = state.products.find(p=>p.id===id);
+  if(!product || product.status!=='available') return;
+  if(!state.cart[id]) state.cart[id] = {qty:0, product};
+  state.cart[id].qty++;
+  renderGrid(); renderCartPill();
+  if(document.getElementById('screen-cart').classList.contains('active')) renderCart();
+  showToast('Added to your basket ✦');
+}
+function decItem(id){
+  if(!state.cart[id]) return;
+  state.cart[id].qty--;
+  if(state.cart[id].qty<=0) delete state.cart[id];
+  renderGrid(); renderCartPill();
+  if(document.getElementById('screen-cart').classList.contains('active')) renderCart();
+}
+function cartCount(){ return Object.values(state.cart).reduce((a,c)=>a+c.qty,0); }
+function cartSubtotal(){ return Object.values(state.cart).reduce((s,c)=>s+c.product.price*c.qty,0); }
+function deliveryFee(){
+  if(state.fulfillment==='pickup') return 0;
+  const sub = cartSubtotal();
+  if(sub===0) return 0;
+  return sub >= state.settings.free_delivery_threshold ? 0 : Number(state.settings.delivery_fee);
+}
+function renderCartPill(){
+  const pill = document.getElementById('cart-pill');
+  const cnt = cartCount();
+  const onCartScreen = document.getElementById('screen-cart').classList.contains('active');
+  if(cnt===0 || onCartScreen){ pill.classList.add('hidden'); return; }
+  pill.classList.remove('hidden');
+  document.getElementById('pill-cnt').textContent = cnt;
+  document.getElementById('pill-total').textContent = 'RM'+cartSubtotal().toFixed(2);
+}
+function setFulfillment(mode){ state.fulfillment = mode; renderCart(); }
+
+function renderCart(){
+  const body = document.getElementById('cart-body');
+  const ids = Object.keys(state.cart);
+  if(ids.length===0){
+    body.innerHTML = `<div class="empty-state">${ICONS.basket}<h3>Your basket is empty</h3><p>Add something warm from Cbakinghouse<br>or something sweet from J.ROME Pastry.</p></div>`;
+    return;
+  }
+  const itemsHtml = ids.map(id=>{
+    const {product, qty} = state.cart[id];
+    const b = state.brands.find(b=>b.id===product.brand_id);
+    const bg = b?.slug==='cbakinghouse' ? 'var(--sand)' : '#EAF0E3';
+    const tagColor = b?.slug==='cbakinghouse' ? 'var(--cbh-deep)' : 'var(--jrome-deep)';
+    const artStyle = product.photo_url ? `style="background-image:url('${product.photo_url}');background-color:${bg}"` : `style="background:${bg}"`;
+    return `
+    <div class="cart-item">
+      <div class="art" ${artStyle}>${product.photo_url ? '' : iconFor(product.categories?.name)}</div>
+      <div class="mid">
+        <div class="brandtag" style="color:${tagColor}">${b?.name||''}</div>
+        <div class="nm">${product.name}</div>
+        <div class="pr">RM${Number(product.price).toFixed(2)} each</div>
+      </div>
+      <div class="qty-stepper"><button onclick="decItem('${id}')">−</button><span>${qty}</span><button onclick="addItem('${id}')">+</button></div>
+    </div>`;
+  }).join('');
+
+  const sub = cartSubtotal();
+  const fee = deliveryFee();
+  const remaining = state.settings.free_delivery_threshold - sub;
+  const discount = state.appliedCoupon ? computeCouponDiscount(state.appliedCoupon, sub) : 0;
+  const walletCap = state.profile ? Math.min(state.profile.wallet_balance, Math.max(sub + fee - discount, 0)) : 0;
+  const walletUsed = Math.min(state.useWallet || 0, walletCap);
+  const total = Math.max(sub + fee - discount - walletUsed, 0);
+
+  body.innerHTML = `
+    ${itemsHtml}
+    <div class="fulfill-toggle">
+      <button class="${state.fulfillment==='delivery'?'active':''}" onclick="setFulfillment('delivery')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="9" width="13" height="8" rx="1.5"/><path d="M15 12h3l3 3v2h-6z"/><circle cx="6" cy="19" r="1.6"/><circle cx="17" cy="19" r="1.6"/></svg>
+        Delivery
+      </button>
+      <button class="${state.fulfillment==='pickup'?'active':''}" onclick="setFulfillment('pickup')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-6h6v6"/></svg>
+        Pickup
+      </button>
+    </div>
+
+    <div class="field-block"><label>Your name</label><input type="text" id="f-name" value="${state.name}" oninput="state.name=this.value"></div>
+    <div class="field-block"><label>Phone number</label><input type="text" id="f-phone" value="${state.phone}" oninput="state.phone=this.value" placeholder="e.g. 0121234567"></div>
+    ${state.fulfillment==='delivery' ? `
+      <div class="field-block"><label>Delivery address</label><textarea rows="2" id="f-address" oninput="state.address=this.value">${state.address}</textarea></div>
+      ${sub>0 && remaining>0 ? `<div class="section-sub" style="padding-top:0;">Add RM${remaining.toFixed(2)} more for free delivery 🌸</div>` : ''}
+    ` : `<div class="section-sub" style="padding-top:0;">Pickup details will be confirmed via WhatsApp after checkout.</div>`}
+    <div class="two-col">
+      <div class="field-block"><label>Date</label><input type="date" id="f-date" oninput="state.date=this.value"></div>
+      <div class="field-block"><label>Time</label><input type="text" id="f-time" placeholder="e.g. 3pm" oninput="state.time=this.value"></div>
+    </div>
+    <div class="field-block"><label>Notes (optional)</label><textarea rows="2" id="f-notes" oninput="state.notes=this.value" placeholder="Any special requests?"></textarea></div>
+
+    <div class="promo-row">
+      <input type="text" id="promo-input" placeholder="Coupon code" value="${state.couponCode||''}" oninput="state.couponCode=this.value">
+      <button onclick="applyCoupon()">Apply</button>
+    </div>
+    ${state.couponMsg ? `<div class="section-sub" style="padding-top:6px;">${state.couponMsg}</div>` : ''}
+
+    ${state.session ? `
+      <div class="field-block">
+        <label>Use wallet (balance: RM${Number(state.profile?.wallet_balance||0).toFixed(2)})</label>
+        <input type="number" step="0.10" min="0" id="f-wallet" value="${state.useWallet||''}" placeholder="0.00" oninput="state.useWallet=parseFloat(this.value)||0; renderCart()">
+      </div>
+    ` : `<div class="section-sub" style="padding-top:0;">Log in from the Account tab to use your wallet balance and earn rewards on this order.</div>`}
+
+    <div class="summary">
+      <div class="summary-row"><span>Subtotal</span><span>RM${sub.toFixed(2)}</span></div>
+      <div class="summary-row"><span>${state.fulfillment==='delivery'?'Delivery fee':'Pickup'}</span>${fee===0?'<span class="free">Free</span>':`<span>RM${fee.toFixed(2)}</span>`}</div>
+      ${discount>0 ? `<div class="summary-row"><span>Coupon (${state.appliedCoupon.code})</span><span>-RM${discount.toFixed(2)}</span></div>` : ''}
+      ${walletUsed>0 ? `<div class="summary-row"><span>Wallet used</span><span>-RM${walletUsed.toFixed(2)}</span></div>` : ''}
+      <div class="summary-row total"><span>Total</span><span>RM${total.toFixed(2)}</span></div>
+    </div>
+
+    <button class="primary-btn" id="checkout-btn" onclick="checkout()">Submit Order · RM${total.toFixed(2)}</button>
+  `;
+}
+
+function computeCouponDiscount(coupon, sub){
+  if(sub < coupon.min_spend) return 0;
+  return coupon.discount_type === 'fixed' ? coupon.discount_value : round2(sub * coupon.discount_value / 100);
+}
+function round2(n){ return Math.round(n*100)/100; }
+
+async function applyCoupon(){
+  const code = (state.couponCode||'').trim().toUpperCase();
+  if(!code){ state.appliedCoupon=null; state.couponMsg=''; renderCart(); return; }
+  const { data, error } = await sb.from('coupons').select('*').eq('code', code).eq('active', true).maybeSingle();
+  if(error || !data){ state.appliedCoupon=null; state.couponMsg='Coupon not found or no longer active.'; renderCart(); return; }
+  if(data.expiry_date && new Date(data.expiry_date) < new Date()){ state.appliedCoupon=null; state.couponMsg='This coupon has expired.'; renderCart(); return; }
+  if(data.usage_limit!==null && data.used_count>=data.usage_limit){ state.appliedCoupon=null; state.couponMsg='This coupon has reached its usage limit.'; renderCart(); return; }
+  if(data.member_only && !state.session){ state.appliedCoupon=null; state.couponMsg='Log in to use this member-only coupon.'; renderCart(); return; }
+  const sub = cartSubtotal();
+  if(sub < data.min_spend){ state.appliedCoupon=null; state.couponMsg=`This coupon needs a minimum spend of RM${Number(data.min_spend).toFixed(2)}.`; renderCart(); return; }
+  state.appliedCoupon = data;
+  state.couponMsg = 'Coupon applied ✦';
+  renderCart();
+}
+
+/* ---------------- Checkout (writes a REAL order) ---------------- */
+async function checkout(){
+  if(cartCount()===0) return;
+  if(!state.name || !state.phone){ showToast('Please add your name and phone number'); return; }
+  if(state.fulfillment==='delivery' && !state.address){ showToast('Please add a delivery address'); return; }
+
+  const btn = document.getElementById('checkout-btn');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+
+  const items = Object.values(state.cart).map(c => ({ product_id: c.product.id, quantity: c.qty, flavour: null }));
+  const sub = cartSubtotal();
+  const fee = deliveryFee();
+  const discount = state.appliedCoupon ? computeCouponDiscount(state.appliedCoupon, sub) : 0;
+  const walletCap = state.profile ? Math.min(state.profile.wallet_balance, Math.max(sub + fee - discount, 0)) : 0;
+  const walletUsed = Math.min(state.useWallet || 0, walletCap);
+
+  const { data, error } = await sb.rpc('place_order', {
+    p_member_id: state.session ? state.session.user.id : null,
+    p_customer_name: state.name,
+    p_phone: state.phone,
+    p_notes: state.notes || null,
+    p_fulfillment: state.fulfillment,
+    p_fulfillment_date: state.date || null,
+    p_fulfillment_time: state.time || null,
+    p_address: state.fulfillment==='delivery' ? state.address : null,
+    p_items: items,
+    p_wallet_use: walletUsed,
+    p_coupon_code: state.appliedCoupon ? state.appliedCoupon.code : null
+  });
+
+  if(error){
+    showToast('Something went wrong: ' + error.message);
+    btn.disabled = false; btn.textContent = 'Submit Order';
+    return;
+  }
+
+  const orderNumber = data.order_number;
+  const total = data.total;
+  const brandsInCart = [...new Set(Object.values(state.cart).map(c => state.brands.find(b=>b.id===c.product.brand_id)?.slug))];
+
+  let waButtons = '';
+  const cbhItems = Object.values(state.cart).filter(c => state.brands.find(b=>b.id===c.product.brand_id)?.slug==='cbakinghouse');
+  const jromeItems = Object.values(state.cart).filter(c => state.brands.find(b=>b.id===c.product.brand_id)?.slug==='jrome');
+  const buildMsg = (list) => encodeURIComponent(
+    `Hi! I just placed order ${orderNumber} on the app.\n` +
+    list.map(c=>`- ${c.product.name} x${c.qty}`).join('\n') +
+    `\n\nName: ${state.name}\nPhone: ${state.phone}\n${state.fulfillment==='delivery' ? 'Delivery to: '+state.address : 'Pickup'}\nTotal: RM${total}`
+  );
+  if(cbhItems.length) waButtons += `<a class="primary-btn wa" style="text-decoration:none;" href="https://wa.me/${state.settings.whatsapp_cbakinghouse||''}?text=${buildMsg(cbhItems)}" target="_blank">Send to Cbakinghouse on WhatsApp</a>`;
+  if(jromeItems.length) waButtons += `<a class="primary-btn wa" style="text-decoration:none;" href="https://wa.me/${state.settings.whatsapp_jrome||''}?text=${buildMsg(jromeItems)}" target="_blank">Send to J.ROME Pastry on WhatsApp</a>`;
+
+  let qrCards = '';
+  if(cbhItems.length) qrCards += `<div class="qr-card"><div class="brand-lbl">Cbakinghouse — scan to pay</div><img src="${state.settings.qr_cbakinghouse_url||QR_CODES.cbakinghouse}"><br><a class="qr-save-link" download="cbakinghouse-duitnow-qr.jpg" href="${state.settings.qr_cbakinghouse_url||QR_CODES.cbakinghouse}">Save QR to Photos</a></div>`;
+  if(jromeItems.length) qrCards += `<div class="qr-card"><div class="brand-lbl">J.ROME Pastry — scan to pay</div><img src="${state.settings.qr_jrome_url||QR_CODES.jrome}"><br><a class="qr-save-link" download="jrome-pastry-duitnow-qr.jpg" href="${state.settings.qr_jrome_url||QR_CODES.jrome}">Save QR to Photos</a></div>`;
+
+  document.getElementById('cart-body').innerHTML = `
+    <div class="empty-state">
+      <h3 style="font-size:20px;">Order placed 🎉</h3>
+      <p>Your order number is</p>
+      <p style="font-family:'Fraunces',serif;font-size:22px;color:var(--ink);margin:6px 0 18px;">${orderNumber}</p>
+      <p>Total: RM${Number(total).toFixed(2)}</p>
+      <p style="margin-top:10px;">Scan below to pay via DuitNow, then tap the WhatsApp button to send us your receipt.</p>
+    </div>
+    ${qrCards}
+    <div style="display:flex;flex-direction:column;gap:10px;padding:0 20px 20px;">${waButtons}</div>
+    <button class="primary-btn outline" style="margin-top:0;" onclick="location.reload()">Start a new order</button>
+  `;
+  state.cart = {};
+  state.appliedCoupon = null; state.couponCode = ''; state.couponMsg=''; state.useWallet = 0;
+  if(state.session) await loadProfile();
+  renderCartPill(); renderGrid();
+}
+
+/* ---------------- Guest order tracking ---------------- */
+async function trackOrder(){
+  const orderNumber = document.getElementById('track-order-number').value.trim();
+  const phone = document.getElementById('track-phone').value.trim();
+  const result = document.getElementById('track-result');
+  if(!orderNumber || !phone){ showToast('Enter both order number and phone'); return; }
+  result.innerHTML = '<div class="loading">Checking…</div>';
+  const { data, error } = await sb.rpc('track_order', { p_order_number: orderNumber, p_phone: phone });
+  if(error || !data || !data.found){
+    result.innerHTML = `<div class="section-sub">We couldn't find that order. Double check the order number and phone number.</div>`;
+    return;
+  }
+  const statusLabels = { new:'New', confirmed:'Confirmed', preparing:'Preparing', ready: data.fulfillment==='pickup'?'Ready for pickup':'Out for delivery', completed:'Completed', cancelled:'Cancelled' };
+  const items = (data.items||[]).map(i=>`${i.brand_name} — ${i.product_name} ×${i.quantity}`).join('<br>');
+  const paymentLabel = data.payment_status==='paid' ? 'Paid' : 'Unpaid';
+  result.innerHTML = `
+    <div class="order-card">
+      <div class="oh"><span class="oid">${data.order_number}</span><span class="status-badge ${data.status}">${statusLabels[data.status]||data.status}</span></div>
+      <div class="order-items">${items}</div>
+      <div class="order-total"><span>Payment</span><span>${paymentLabel}</span></div>
+      <div class="order-total"><span>Total</span><span>RM${Number(data.total).toFixed(2)}</span></div>
+    </div>`;
+}
+
+/* ---------------- Member account ---------------- */
+async function initSession(){
+  const { data: { session } } = await sb.auth.getSession();
+  state.session = session;
+  if(session) await loadProfile();
+}
 async function loadProfile(){
   const { data } = await sb.from('profiles').select('*').eq('id', state.session.user.id).single();
   state.profile = data;
