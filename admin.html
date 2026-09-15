@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bakery Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{ --cream:#FBF6EE; --sand:#F3E6D8; --ink:#4A3229; --muted:#8C7267; --line:#E4D6C8; --cbh:#C97B5A; --jrome:#9CB380; --gold:#D8A657; --white:#fff; --red:#B85C5C; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:'Quicksand',sans-serif; background:var(--cream); color:var(--ink); }
+  h1,h2,h3{ font-family:'Fraunces',serif; margin:0; }
+  button{ font-family:'Quicksand',sans-serif; font-weight:700; cursor:pointer; border:none; }
+  input,select,textarea{ font-family:'Quicksand',sans-serif; }
+  #login-screen{ max-width:360px; margin:80px auto; padding:32px; background:var(--white); border-radius:22px; border:1.5px solid var(--line); }
+  #login-screen h1{ font-size:22px; margin-bottom:6px; }
+  #login-screen p{ font-size:12.5px; color:var(--muted); margin-bottom:20px; }
+  .field{ margin-bottom:14px; }
+  .field label{ font-size:12px; font-weight:700; color:var(--muted); display:block; margin-bottom:6px; }
+  .field input, .field select, .field textarea{ width:100%; padding:11px 13px; border-radius:12px; border:1.5px solid var(--line); font-size:13.5px; }
+  .btn{ padding:12px 18px; border-radius:12px; background:var(--ink); color:var(--cream); font-size:13.5px; }
+  .btn.gold{ background:var(--gold); color:var(--ink); }
+  .btn.outline{ background:var(--white); border:1.5px solid var(--ink); color:var(--ink); }
+  .btn.danger{ background:var(--red); color:white; }
+  .btn.small{ padding:7px 12px; font-size:12px; border-radius:10px; }
+  .err{ color:var(--red); font-size:12.5px; margin-top:8px; }
+
+  #admin-shell{ display:none; max-width:1000px; margin:0 auto; padding-bottom:60px; }
+  header.topbar{ display:flex; align-items:center; justify-content:space-between; padding:18px 20px; border-bottom:1.5px solid var(--line); background:var(--white); position:sticky; top:0; z-index:10; }
+  header.topbar h1{ font-size:19px; }
+  .tabs{ display:flex; gap:6px; padding:14px 20px 0; flex-wrap:wrap; }
+  .tab{ padding:9px 16px; border-radius:999px; background:var(--white); border:1.5px solid var(--line); font-size:13px; color:var(--muted); }
+  .tab.active{ background:var(--ink); color:var(--cream); border-color:var(--ink); }
+  .panel{ display:none; padding:18px 20px; }
+  .panel.active{ display:block; }
+
+  table{ width:100%; border-collapse:collapse; background:var(--white); border-radius:16px; overflow:hidden; border:1.5px solid var(--line); }
+  th,td{ padding:10px 12px; text-align:left; font-size:12.5px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ background:var(--sand); font-size:11.5px; text-transform:uppercase; letter-spacing:.3px; color:var(--muted); }
+  tr:last-child td{ border-bottom:none; }
+  .status-pill{ padding:4px 10px; border-radius:999px; font-size:11px; font-weight:700; display:inline-block; }
+  .status-pill.available{ background:#E1EDD8; color:#5C7A47; }
+  .status-pill.sold_out{ background:#F3E4C8; color:#9A7A2E; }
+  .status-pill.unavailable{ background:#F3DCDC; color:#A24444; }
+  .thumb{ width:40px; height:40px; border-radius:10px; object-fit:cover; background:var(--sand); }
+
+  .modal-bg{ display:none; position:fixed; inset:0; background:rgba(74,50,41,.4); z-index:100; align-items:flex-start; justify-content:center; overflow-y:auto; padding:30px 16px; }
+  .modal-bg.show{ display:flex; }
+  .modal{ background:var(--white); border-radius:20px; padding:24px; max-width:440px; width:100%; }
+  .modal h2{ font-size:18px; margin-bottom:16px; }
+  .modal-actions{ display:flex; gap:10px; margin-top:18px; }
+  .search-row{ margin-bottom:14px; }
+  .search-row input{ width:100%; padding:10px 14px; border-radius:12px; border:1.5px solid var(--line); font-size:13px; }
+  .add-row{ margin-bottom:14px; }
+  .flavour-row{ display:flex; gap:6px; margin-bottom:6px; }
+  .flavour-row input{ flex:1; padding:8px 10px; border-radius:8px; border:1.5px solid var(--line); font-size:12.5px; }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <h1>Bakery Admin</h1>
+  <p>Sign in with your admin account.</p>
+  <div class="field"><label>Email</label><input type="email" id="login-email"></div>
+  <div class="field"><label>Password</label><input type="password" id="login-password"></div>
+  <button class="btn" style="width:100%;" onclick="login()">Sign in</button>
+  <div class="err" id="login-err"></div>
+</div>
+
+<div id="admin-shell">
+  <header class="topbar">
+    <h1>Bakery Admin</h1>
+    <button class="btn outline small" onclick="logout()">Sign out</button>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="orders" onclick="switchTab('orders')">Orders</button>
+    <button class="tab" data-tab="products" onclick="switchTab('products')">Products</button>
+    <button class="tab" data-tab="categories" onclick="switchTab('categories')">Categories</button>
+    <button class="tab" data-tab="settings" onclick="switchTab('settings')">Settings</button>
+  </div>
+
+  <div class="panel active" id="panel-orders">
+    <div class="search-row"><input type="text" id="order-search" placeholder="Search by order number, name, or phone" oninput="renderOrders()"></div>
+    <div id="orders-table"></div>
+  </div>
+
+  <div class="panel" id="panel-products">
+    <div class="add-row"><button class="btn gold" onclick="openProductModal(null)">+ Add product</button></div>
+    <div id="products-table"></div>
+  </div>
+
+  <div class="panel" id="panel-categories">
+    <div id="categories-body"></div>
+  </div>
+
+  <div class="panel" id="panel-settings">
+    <div id="settings-body"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="product-modal">
+  <div class="modal">
+    <h2 id="product-modal-title">Add product</h2>
+    <div class="field"><label>Brand</label><select id="pf-brand" onchange="populateCategorySelect()"></select></div>
+    <div class="field"><label>Category</label><select id="pf-category"></select></div>
+    <div class="field"><label>Product name</label><input type="text" id="pf-name"></div>
+    <div class="field"><label>Description</label><textarea id="pf-desc" rows="2"></textarea></div>
+    <div class="field"><label>Price (RM)</label><input type="number" step="0.10" id="pf-price"></div>
+    <div class="field"><label>Status</label>
+      <select id="pf-status">
+        <option value="available">Available</option>
+        <option value="sold_out">Sold out</option>
+        <option value="unavailable">Unavailable (hidden)</option>
+      </select>
+    </div>
+    <div class="field"><label>Photo</label>
+      <input type="file" id="pf-photo" accept="image/*">
+      <div id="pf-photo-preview" style="margin-top:8px;"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" style="flex:1;" onclick="saveProduct()">Save</button>
+      <button class="btn outline" style="flex:1;" onclick="closeProductModal()">Cancel</button>
+    </div>
+    <div class="err" id="product-err"></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://sinkciczsxumobxmuvwa.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_LRIyfKJD8hx-ul1qLIyKwg_kgwubg5e';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let state = { brands: [], categories: [], products: [], orders: [], editingProductId: null };
+
+async function login(){
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errBox = document.getElementById('login-err');
+  errBox.textContent = '';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){ errBox.textContent = error.message; return; }
+  const { data: profile, error: pErr } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
+  if(pErr || !profile || !profile.is_admin){
+    errBox.textContent = 'This account is not an admin.';
+    await sb.auth.signOut();
+    return;
+  }
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-shell').style.display = 'block';
+  await loadAll();
+}
+async function logout(){
+  await sb.auth.signOut();
+  location.reload();
+}
+
+async function loadAll(){
+  const [{data: brands}, {data: categories}, {data: products}, {data: orders}, {data: settings}] = await Promise.all([
+    sb.from('brands').select('*'),
+    sb.from('categories').select('*').order('sort_order'),
+    sb.from('products').select('*, categories(name)').order('created_at', {ascending:false}),
+    sb.from('orders').select('*, order_items(*)').order('created_at', {ascending:false}),
+    sb.from('app_settings').select('*').eq('id',1).single()
+  ]);
+  state.brands = brands||[]; state.categories = categories||[]; state.products = products||[]; state.orders = orders||[]; state.settings = settings||{};
+  renderOrders(); renderProducts(); renderCategories(); renderSettings();
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active', p.id==='panel-'+tab));
+}
+
+/* ---------------- Orders ---------------- */
+const STATUS_OPTIONS = ['new','confirmed','preparing','ready','completed','cancelled'];
+function renderOrders(){
+  const q = (document.getElementById('order-search')?.value||'').toLowerCase();
+  const rows = state.orders.filter(o => !q || o.order_number.toLowerCase().includes(q) || (o.customer_name||'').toLowerCase().includes(q) || (o.phone||'').includes(q));
+  document.getElementById('orders-table').innerHTML = `
+    <table><thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Fulfillment</th><th>Total</th><th>Status</th></tr></thead>
+    <tbody>${rows.map(o=>`
+      <tr>
+        <td>${o.order_number}<br><span style="color:var(--muted);font-size:11px;">${new Date(o.created_at).toLocaleString()}</span></td>
+        <td>${o.customer_name}<br><span style="color:var(--muted);font-size:11px;">${o.phone}</span></td>
+        <td>${(o.order_items||[]).map(i=>`${i.product_name} ×${i.quantity}`).join('<br>')}</td>
+        <td>${o.fulfillment}${o.address?'<br><span style="color:var(--muted);font-size:11px;">'+o.address+'</span>':''}</td>
+        <td>RM${Number(o.total).toFixed(2)}</td>
+        <td><select onchange="updateOrderStatus('${o.id}', this.value)">${STATUS_OPTIONS.map(s=>`<option value="${s}" ${s===o.status?'selected':''}>${s}</option>`).join('')}</select></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+async function updateOrderStatus(id, status){
+  const { error } = await sb.from('orders').update({status}).eq('id', id);
+  if(error){ alert('Failed to update: '+error.message); return; }
+  const o = state.orders.find(o=>o.id===id); if(o) o.status = status;
+}
+
+/* ---------------- Products ---------------- */
+function renderProducts(){
+  document.getElementById('products-table').innerHTML = `
+    <table><thead><tr><th>Photo</th><th>Name</th><th>Brand / Category</th><th>Price</th><th>Status</th><th></th></tr></thead>
+    <tbody>${state.products.map(p=>{
+      const brand = state.brands.find(b=>b.id===p.brand_id);
+      return `<tr>
+        <td>${p.photo_url ? `<img class="thumb" src="${p.photo_url}">` : '<div class="thumb"></div>'}</td>
+        <td>${p.name}</td>
+        <td>${brand?.name||''}<br><span style="color:var(--muted);font-size:11px;">${p.categories?.name||''}</span></td>
+        <td>RM${Number(p.price).toFixed(2)}</td>
+        <td><span class="status-pill ${p.status}">${p.status.replace('_',' ')}</span></td>
+        <td><button class="btn small outline" onclick="openProductModal('${p.id}')">Edit</button></td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+function populateBrandSelect(){
+  document.getElementById('pf-brand').innerHTML = state.brands.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
+}
+function populateCategorySelect(){
+  const bId = document.getElementById('pf-brand').value;
+  const cats = state.categories.filter(c=>c.brand_id==bId);
+  document.getElementById('pf-category').innerHTML = cats.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+function openProductModal(id){
+  state.editingProductId = id;
+  populateBrandSelect();
+  document.getElementById('product-err').textContent = '';
+  document.getElementById('pf-photo-preview').innerHTML = '';
+  document.getElementById('pf-photo').value = '';
+  if(id){
+    const p = state.products.find(p=>p.id===id);
+    document.getElementById('product-modal-title').textContent = 'Edit product';
+    document.getElementById('pf-brand').value = p.brand_id;
+    populateCategorySelect();
+    document.getElementById('pf-category').value = p.category_id;
+    document.getElementById('pf-name').value = p.name;
+    document.getElementById('pf-desc').value = p.description||'';
+    document.getElementById('pf-price').value = p.price;
+    document.getElementById('pf-status').value = p.status;
+    if(p.photo_url) document.getElementById('pf-photo-preview').innerHTML = `<img class="thumb" style="width:60px;height:60px;" src="${p.photo_url}">`;
+  } else {
+    document.getElementById('product-modal-title').textContent = 'Add product';
+    populateCategorySelect();
+    document.getElementById('pf-name').value = '';
+    document.getElementById('pf-desc').value = '';
+    document.getElementById('pf-price').value = '';
+    document.getElementById('pf-status').value = 'available';
+  }
+  document.getElementById('product-modal').classList.add('show');
+}
+function closeProductModal(){ document.getElementById('product-modal').classList.remove('show'); }
+
+async function saveProduct(){
+  const errBox = document.getElementById('product-err');
+  errBox.textContent = '';
+  const brand_id = document.getElementById('pf-brand').value;
+  const category_id = document.getElementById('pf-category').value;
+  const name = document.getElementById('pf-name').value.trim();
+  const description = document.getElementById('pf-desc').value.trim();
+  const price = parseFloat(document.getElementById('pf-price').value);
+  const status = document.getElementById('pf-status').value;
+  if(!name || isNaN(price)){ errBox.textContent = 'Please fill in name and price.'; return; }
+
+  let photo_url = null;
+  const fileInput = document.getElementById('pf-photo');
+  if(fileInput.files[0]){
+    const file = fileInput.files[0];
+    const path = `${brand_id}/${Date.now()}-${file.name}`;
+    const { error: upErr } = await sb.storage.from('product-photos').upload(path, file, { upsert:true });
+    if(upErr){ errBox.textContent = 'Photo upload failed: '+upErr.message; return; }
+    const { data: pub } = sb.storage.from('product-photos').getPublicUrl(path);
+    photo_url = pub.publicUrl;
+  }
+
+  const payload = { brand_id, category_id, name, description, price, status };
+  if(photo_url) payload.photo_url = photo_url;
+
+  let error;
+  if(state.editingProductId){
+    ({ error } = await sb.from('products').update(payload).eq('id', state.editingProductId));
+  } else {
+    ({ error } = await sb.from('products').insert(payload));
+  }
+  if(error){ errBox.textContent = error.message; return; }
+  closeProductModal();
+  await loadAll();
+  switchTab('products');
+}
+
+/* ---------------- Categories ---------------- */
+function renderCategories(){
+  document.getElementById('categories-body').innerHTML = state.brands.map(b=>{
+    const cats = state.categories.filter(c=>c.brand_id===b.id);
+    return `
+    <h3 style="margin:18px 0 10px;font-size:16px;">${b.name}</h3>
+    <table style="margin-bottom:14px;"><tbody>
+      ${cats.map(c=>`<tr><td>${c.name}</td><td style="text-align:right;"><button class="btn small outline" onclick="renameCategory('${c.id}','${c.name.replace(/'/g,"\\'")}')">Rename</button> <button class="btn small danger" onclick="deleteCategory('${c.id}')">Delete</button></td></tr>`).join('')}
+    </tbody></table>
+    <div style="display:flex;gap:8px;margin-bottom:20px;">
+      <input type="text" id="new-cat-${b.id}" placeholder="New category name" style="flex:1;padding:9px 12px;border-radius:10px;border:1.5px solid var(--line);">
+      <button class="btn small gold" onclick="addCategory(${b.id})">Add</button>
+    </div>`;
+  }).join('');
+}
+async function addCategory(brandId){
+  const input = document.getElementById('new-cat-'+brandId);
+  const name = input.value.trim();
+  if(!name) return;
+  const { error } = await sb.from('categories').insert({ brand_id: brandId, name, sort_order: 99 });
+  if(error){ alert(error.message); return; }
+  await loadAll(); switchTab('categories');
+}
+async function renameCategory(id, oldName){
+  const name = prompt('New category name:', oldName);
+  if(!name) return;
+  const { error } = await sb.from('categories').update({name}).eq('id', id);
+  if(error){ alert(error.message); return; }
+  await loadAll(); switchTab('categories');
+}
+async function deleteCategory(id){
+  if(!confirm('Delete this category? Products in it will keep their data but lose the category link.')) return;
+  const { error } = await sb.from('categories').delete().eq('id', id);
+  if(error){ alert(error.message); return; }
+  await loadAll(); switchTab('categories');
+}
+
+/* ---------------- Settings ---------------- */
+function renderSettings(){
+  const s = state.settings;
+  document.getElementById('settings-body').innerHTML = `
+    <div class="field"><label>Delivery fee (RM)</label><input type="number" step="0.10" id="s-delivery-fee" value="${s.delivery_fee}"></div>
+    <div class="field"><label>Free delivery over (RM)</label><input type="number" step="1" id="s-free-threshold" value="${s.free_delivery_threshold}"></div>
+    <div class="field"><label>Reward rate (e.g. 0.05 = 5% cashback to wallet)</label><input type="number" step="0.01" id="s-reward-rate" value="${s.reward_rate}"></div>
+    <div class="field"><label>Welcome gift amount (RM)</label><input type="number" step="1" id="s-welcome-gift" value="${s.welcome_gift_amount}"></div>
+    <button class="btn gold" onclick="saveSettings()">Save settings</button>
+    <div class="err" id="settings-err"></div>
+  `;
+}
+async function saveSettings(){
+  const payload = {
+    delivery_fee: parseFloat(document.getElementById('s-delivery-fee').value),
+    free_delivery_threshold: parseFloat(document.getElementById('s-free-threshold').value),
+    reward_rate: parseFloat(document.getElementById('s-reward-rate').value),
+    welcome_gift_amount: parseFloat(document.getElementById('s-welcome-gift').value)
+  };
+  const { error } = await sb.from('app_settings').update(payload).eq('id',1);
+  const errBox = document.getElementById('settings-err');
+  errBox.textContent = error ? error.message : 'Saved ✓';
+}
+
+/* ---------------- Restore session on reload ---------------- */
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if(session){
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', session.user.id).single();
+    if(profile && profile.is_admin){
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('admin-shell').style.display = 'block';
+      await loadAll();
+    }
+  }
+})();
+</script>
+</body>
+</html>
