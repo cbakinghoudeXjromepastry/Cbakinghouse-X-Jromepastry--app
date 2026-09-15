@@ -409,43 +409,52 @@ function renderSettings(){
       <input type="file" id="s-qr-jrome" accept="image/*">
     </div>
 
-    <button class="btn gold" onclick="saveSettings()">Save settings</button>
+    <button class="btn gold" id="settings-save-btn" onclick="saveSettings()">Save settings</button>
     <div class="err" id="settings-err"></div>
   `;
 }
 async function saveSettings(){
   const errBox = document.getElementById('settings-err');
-  errBox.textContent = '';
-  const payload = {
-    delivery_fee: parseFloat(document.getElementById('s-delivery-fee').value),
-    free_delivery_threshold: parseFloat(document.getElementById('s-free-threshold').value),
-    reward_rate: parseFloat(document.getElementById('s-reward-rate').value),
-    welcome_gift_amount: parseFloat(document.getElementById('s-welcome-gift').value),
-    referral_bonus: parseFloat(document.getElementById('s-referral-bonus').value),
-    whatsapp_cbakinghouse: document.getElementById('s-wa-cbh').value.trim(),
-    whatsapp_jrome: document.getElementById('s-wa-jrome').value.trim()
-  };
+  errBox.textContent = 'Saving…';
+  const saveBtn = document.getElementById('settings-save-btn');
+  if(saveBtn) saveBtn.disabled = true;
+  try{
+    const payload = {
+      delivery_fee: parseFloat(document.getElementById('s-delivery-fee').value),
+      free_delivery_threshold: parseFloat(document.getElementById('s-free-threshold').value),
+      reward_rate: parseFloat(document.getElementById('s-reward-rate').value),
+      welcome_gift_amount: parseFloat(document.getElementById('s-welcome-gift').value),
+      referral_bonus: parseFloat(document.getElementById('s-referral-bonus').value),
+      whatsapp_cbakinghouse: document.getElementById('s-wa-cbh').value.trim(),
+      whatsapp_jrome: document.getElementById('s-wa-jrome').value.trim()
+    };
 
-  const cbhFile = document.getElementById('s-qr-cbh').files[0];
-  if(cbhFile){
-    const path = `qr/cbakinghouse-${Date.now()}-${cbhFile.name}`;
-    const { error: upErr } = await sb.storage.from('product-photos').upload(path, cbhFile, { upsert:true });
-    if(upErr){ errBox.textContent = 'Cbakinghouse QR upload failed: '+upErr.message; return; }
-    const { data: pub } = sb.storage.from('product-photos').getPublicUrl(path);
-    payload.qr_cbakinghouse_url = pub.publicUrl;
-  }
-  const jromeFile = document.getElementById('s-qr-jrome').files[0];
-  if(jromeFile){
-    const path = `qr/jrome-${Date.now()}-${jromeFile.name}`;
-    const { error: upErr } = await sb.storage.from('product-photos').upload(path, jromeFile, { upsert:true });
-    if(upErr){ errBox.textContent = 'J.ROME QR upload failed: '+upErr.message; return; }
-    const { data: pub } = sb.storage.from('product-photos').getPublicUrl(path);
-    payload.qr_jrome_url = pub.publicUrl;
-  }
+    const cbhFile = document.getElementById('s-qr-cbh').files[0];
+    if(cbhFile){
+      const path = `qr/cbakinghouse-${Date.now()}-${cbhFile.name}`;
+      const { error: upErr } = await sb.storage.from('product-photos').upload(path, cbhFile, { upsert:true });
+      if(upErr){ document.getElementById('settings-err').textContent = 'Cbakinghouse QR upload failed: '+upErr.message; if(saveBtn) saveBtn.disabled=false; return; }
+      const { data: pub } = sb.storage.from('product-photos').getPublicUrl(path);
+      payload.qr_cbakinghouse_url = pub.publicUrl;
+    }
+    const jromeFile = document.getElementById('s-qr-jrome').files[0];
+    if(jromeFile){
+      const path = `qr/jrome-${Date.now()}-${jromeFile.name}`;
+      const { error: upErr } = await sb.storage.from('product-photos').upload(path, jromeFile, { upsert:true });
+      if(upErr){ document.getElementById('settings-err').textContent = 'J.ROME QR upload failed: '+upErr.message; if(saveBtn) saveBtn.disabled=false; return; }
+      const { data: pub } = sb.storage.from('product-photos').getPublicUrl(path);
+      payload.qr_jrome_url = pub.publicUrl;
+    }
 
-  const { error } = await sb.from('app_settings').update(payload).eq('id',1);
-  errBox.textContent = error ? error.message : 'Saved ✓';
-  if(!error){ Object.assign(state.settings, payload); renderSettings(); }
+    const { error } = await sb.from('app_settings').update(payload).eq('id',1);
+    if(error){ document.getElementById('settings-err').textContent = error.message; if(saveBtn) saveBtn.disabled=false; return; }
+    Object.assign(state.settings, payload);
+    renderSettings();
+    document.getElementById('settings-err').textContent = 'Saved ✓';
+  } catch(e){
+    document.getElementById('settings-err').textContent = 'Unexpected error: ' + (e && e.message ? e.message : e);
+    if(saveBtn) saveBtn.disabled = false;
+  }
 }
 
 /* ---------------- Members & Wallet ---------------- */
