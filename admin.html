@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Cbakinghouse × J.ROME Pastry</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    :root {
+      --cream: #FBF6EE;
+      --sand: #F3E6D8;
+      --ink: #4A3229;
+      --muted: #8C7267;
+      --line: #EBDDD0;
+      --cbh: #C97B5A;
+      --jrome: #9CB380;
+      --white: #FFFFFF;
+      --success: #4CAF50;
+      --danger: #f44336;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--cream);
+      color: var(--ink);
+      font-family: 'Quicksand', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3 { font-family: 'Fraunces', serif; font-weight: 600; margin: 0; }
+    button { font-family: 'Quicksand', sans-serif; border: none; cursor: pointer; }
+
+    #admin {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      width: 200px;
+      background: var(--white);
+      border-right: 1.5px solid var(--line);
+      padding: 20px;
+      position: fixed;
+      left: 0;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sidebar h3 {
+      font-size: 18px;
+      margin-bottom: 20px;
+    }
+
+    .nav-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-item {
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: transparent;
+      border: none;
+      text-align: left;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item:hover { background: var(--sand); }
+    .nav-item.active { background: var(--cbh); color: white; }
+
+    /* ===== MAIN CONTENT ===== */
+    .main {
+      margin-left: 200px;
+      flex: 1;
+      padding: 20px;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .screen-header {
+      margin-bottom: 24px;
+    }
+
+    .screen-header h2 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    /* ===== DASHBOARD ===== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--white);
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: 'Fraunces', serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--cbh);
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ===== TABLES ===== */
+    .table-container {
+      background: var(--white);
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      background: var(--sand);
+      padding: 12px;
+      text-align: left;
+      font-weight: 700;
+      border-bottom: 1.5px solid var(--line);
+    }
+
+    td {
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .status-pending { background: #FFF3CD; color: #856404; }
+    .status-paid { background: #D4EDDA; color: #155724; }
+    .status-rejected { background: #F8D7DA; color: #721C24; }
+    .status-order-received { background: #D1ECF1; color: #0C5460; }
+    .status-confirmed { background: #D1ECF1; color: #0C5460; }
+    .status-preparing { background: #E7D4F5; color: #4A2757; }
+    .status-ready { background: #D4EDDA; color: #155724; }
+    .status-completed { background: #D4EDDA; color: #155724; }
+    .status-cancelled { background: #F8D7DA; color: #721C24; }
+
+    .action-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: var(--cbh);
+      color: white;
+      border: none;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-right: 6px;
+    }
+
+    .action-btn:hover { opacity: 0.9; }
+    .action-btn.danger { background: var(--danger); }
+
+    /* ===== FORMS ===== */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--ink);
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1.5px solid var(--line);
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: 'Quicksand', sans-serif;
+      background: var(--white);
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--cbh);
+      box-shadow: 0 0 0 3px rgba(201, 123, 90, 0.1);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .btn-primary {
+      padding: 12px 24px;
+      background: var(--cbh);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-right: 12px;
+    }
+
+    .btn-secondary {
+      padding: 12px 24px;
+      background: var(--sand);
+      color: var(--ink);
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* ===== MODAL ===== */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active { display: flex; }
+
+    .modal-content {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    /* ===== PRODUCT FORM ===== */
+    .product-form {
+      background: var(--white);
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .image-preview {
+      width: 200px;
+      height: 200px;
+      background: var(--sand);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .image-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .checkbox-group {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: auto;
+    }
+
+    .checkbox-group label {
+      margin-bottom: 0;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1.5px solid var(--line);
+        padding: 16px;
+      }
+
+      .main {
+        margin-left: 0;
+      }
+
+      .nav-menu {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+
+      .nav-item {
+        flex: 1;
+        min-width: 100px;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      table {
+        font-size: 12px;
+      }
+
+      th, td {
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="admin">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <h3>Admin Menu</h3>
+      <div class="nav-menu">
+        <button class="nav-item active" onclick="showScreen('dashboard')">📊 Dashboard</button>
+        <button class="nav-item" onclick="showScreen('orders')">📦 Orders</button>
+        <button class="nav-item" onclick="showScreen('products')">🥯 Products</button>
+        <button class="nav-item" onclick="showScreen('categories')">🗂️ Categories</button>
+        <button class="nav-item" onclick="showScreen('deliveryZones')">🚚 Delivery Zones</button>
+        <button class="nav-item" onclick="showScreen('settings')">⚙️ Settings</button>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+      <!-- DASHBOARD -->
+      <div class="screen active" id="dashboard">
+        <div class="screen-header">
+          <h2>Dashboard</h2>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="todayOrders">0</div>
+            <div class="stat-label">Today's Orders</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="todaySales">RM 0</div>
+            <div class="stat-label">Today's Sales</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="pendingPayment">0</div>
+            <div class="stat-label">Pending Payment</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalOrders">0</div>
+            <div class="stat-label">Total Orders</div>
+          </div>
+        </div>
+
+        <div class="screen-header" style="margin-top: 32px;">
+          <h2>Recent Orders</h2>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Order #</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>Payment</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="recentOrdersTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ORDERS -->
+      <div class="screen" id="orders">
+        <div class="screen-header">
+          <h2>Orders Management</h2>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Order #</th>
+                <th>Customer</th>
+                <th>Phone</th>
+                <th>Amount</th>
+                <th>Payment</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PRODUCTS -->
+      <div class="screen" id="products">
+        <div class="screen-header">
+          <h2>Products Management</h2>
+          <button class="btn-primary" onclick="openProductForm()">+ Add Product</button>
+        </div>
+
+        <div id="productsForm"></div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Brand</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Available</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="productsTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CATEGORIES -->
+      <div class="screen" id="categories">
+        <div class="screen-header">
+          <h2>Categories</h2>
+          <button class="btn-primary" onclick="openCategoryForm()">+ Add Category</button>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Brand</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="categoriesTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- DELIVERY ZONES -->
+      <div class="screen" id="deliveryZones">
+        <div class="screen-header">
+          <h2>Melaka Delivery Zones</h2>
+          <button class="btn-primary" onclick="openZoneForm()">+ Add Zone</button>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Area</th>
+                <th>Postcode</th>
+                <th>Fee (RM)</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="zonesTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="screen" id="settings">
+        <div class="screen-header">
+          <h2>Settings</h2>
+        </div>
+
+        <div class="product-form">
+          <h3>QR Code Management</h3>
+          <div class="form-group">
+            <label>Current QR Code (CBH)</label>
+            <div class="image-preview" id="qrPreviewCBH">
+              <span style="color: var(--muted);">No image</span>
+            </div>
+            <input type="file" accept="image/*" onchange="uploadQR('cbh', this)">
+          </div>
+
+          <div class="form-group">
+            <label>Current QR Code (J.ROME)</label>
+            <div class="image-preview" id="qrPreviewJROME">
+              <span style="color: var(--muted);">No image</span>
+            </div>
+            <input type="file" accept="image/*" onchange="uploadQR('jrome', this)">
+          </div>
+        </div>
+
+        <div class="product-form">
+          <h3>Announcement</h3>
+          <div class="form-group">
+            <label>Announcement Text</label>
+            <textarea id="announcementText" rows="3" placeholder="e.g., Order before 6PM for next-day delivery 🤍"></textarea>
+          </div>
+          <button class="btn-primary" onclick="saveAnnouncement()">Save Announcement</button>
+        </div>
+
+        <div class="product-form">
+          <h3>Welcome Popup</h3>
+          <div class="form-group">
+            <label>Popup Title</label>
+            <input type="text" id="popupTitle" placeholder="Welcome to Our Little Bakery">
+          </div>
+          <div class="form-group">
+            <label>Popup Description</label>
+            <input type="text" id="popupDesc" placeholder="Freshly baked with love 🤍">
+          </div>
+          <div class="form-group">
+            <label>Popup Image</label>
+            <div class="image-preview" id="popupImagePreview">
+              <span style="color: var(--muted);">No image</span>
+            </div>
+            <input type="file" accept="image/*" onchange="uploadPopupImage(this)">
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="popupEnabled" checked>
+            <label for="popupEnabled">Enable Popup</label>
+          </div>
+          <button class="btn-primary" onclick="savePopup()" style="margin-top: 16px;">Save Popup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <div class="modal" id="orderModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Order Details</h2>
+        <button class="modal-close" onclick="closeModal('orderModal')">×</button>
+      </div>
+      <div id="orderModalContent"></div>
+    </div>
+  </div>
+
+  <script>
+    // SUPABASE CONFIG
+    const SUPABASE_URL = 'https://sinkciczsxumobxmuvwa.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpbmtjaWN6c3h1bW9ieG11dndhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTA0ODE4NjEsImV4cCI6MjAyNjA1Nzg2MX0.Ql9yfEDxJhI7PN8k1m2_N5xP8q3R7s6T9u0V1w2X3y';
+    
+    const { createClient } = window.supabase;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let allOrders = [];
+    let allProducts = [];
+    let allCategories = [];
+    let allZones = [];
+
+    // INIT
+    async function init() {
+      await loadDashboard();
+      await loadOrders();
+      await loadProducts();
+      await loadCategories();
+      await loadZones();
+      await loadSettings();
+    }
+
+    // DASHBOARD
+    async function loadDashboard() {
+      try {
+        const { data: orders } = await supabase
+          .from('orders')
+          .select('*')
+          .gte('created_at', new Date().toISOString().split('T')[0]);
+
+        const totalOrders = await supabase.from('orders').select('*', { count: 'exact' });
+
+        const todayOrders = orders?.length || 0;
+        const todaySales = orders?.reduce((sum, o) => sum + o.total, 0) || 0;
+        const pendingPayment = orders?.filter(o => o.payment_status === 'pending').length || 0;
+
+        document.getElementById('todayOrders').textContent = todayOrders;
+        document.getElementById('todaySales').textContent = `RM ${todaySales.toFixed(2)}`;
+        document.getElementById('pendingPayment').textContent = pendingPayment;
+        document.getElementById('totalOrders').textContent = totalOrders.count || 0;
+
+        // Recent orders
+        const recentOrders = orders?.slice(0, 5) || [];
+        const html = recentOrders.map(order => `
+          <tr>
+            <td>${order.id}</td>
+            <td>${order.customer_name}</td>
+            <td>RM ${order.total.toFixed(2)}</td>
+            <td><span class="status-badge status-${order.payment_status}">${order.payment_status}</span></td>
+            <td><span class="status-badge status-${order.order_status}">${order.order_status}</span></td>
+            <td><button class="action-btn" onclick="viewOrder('${order.id}')">View</button></td>
+          </tr>
+        `).join('');
+
+        document.getElementById('recentOrdersTable').innerHTML = html;
+      } catch (e) {
+        console.error('Error loading dashboard:', e);
+      }
+    }
+
+    // ORDERS
+    async function loadOrders() {
+      try {
+        const { data } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        allOrders = data || [];
+        renderOrders();
+      } catch (e) {
+        console.error('Error loading orders:', e);
+      }
+    }
+
+    function renderOrders() {
+      const html = allOrders.map(order => `
+        <tr>
+          <td>${order.id}</td>
+          <td>${order.customer_name}</td>
+          <td>${order.customer_phone}</td>
+          <td>RM ${order.total.toFixed(2)}</td>
+          <td><span class="status-badge status-${order.payment_status}">${order.payment_status}</span></td>
+          <td><span class="status-badge status-${order.order_status}">${order.order_status}</span></td>
+          <td>
+            <button class="action-btn" onclick="viewOrder('${order.id}')">View</button>
+            <button class="action-btn" onclick="updatePaymentStatus('${order.id}', 'paid')">Paid</button>
+            <button class="action-btn" onclick="updateOrderStatus('${order.id}', 'confirmed')">Confirm</button>
+          </td>
+        </tr>
+      `).join('');
+
+      document.getElementById('ordersTable').innerHTML = html;
+    }
+
+    async function viewOrder(orderId) {
+      const order = allOrders.find(o => o.id === orderId);
+      if (!order) return;
+
+      const itemsHtml = (order.items || []).map(item => `
+        <div style="margin-bottom: 8px; padding: 8px; background: var(--sand); border-radius: 6px; font-size: 13px;">
+          ${item.name} × ${item.quantity} = RM ${(item.price * item.quantity).toFixed(2)}
+        </div>
+      `).join('');
+
+      const html = `
+        <div style="font-size: 13px;">
+          <p><strong>Customer:</strong> ${order.customer_name}</p>
+          <p><strong>Phone:</strong> ${order.customer_phone}</p>
+          <p><strong>Delivery:</strong> ${order.delivery_type === 'pickup' ? 'Pickup' : 'Delivery'}</p>
+          ${order.delivery_type === 'delivery' ? `<p><strong>Address:</strong> ${order.address} ${order.postcode}</p>` : ''}
+          <p><strong>Note:</strong> ${order.note || 'None'}</p>
+          
+          <hr style="border: none; border-top: 1.5px solid var(--line); margin: 12px 0;">
+          
+          <strong style="display: block; margin-bottom: 8px;">Items:</strong>
+          ${itemsHtml}
+          
+          <hr style="border: none; border-top: 1.5px solid var(--line); margin: 12px 0;">
+          
+          <p><strong>Subtotal:</strong> RM ${order.subtotal.toFixed(2)}</p>
+          <p><strong>Delivery Fee:</strong> RM ${order.delivery_fee.toFixed(2)}</p>
+          <p style="font-size: 14px; font-weight: 700;"><strong>Total:</strong> RM ${order.total.toFixed(2)}</p>
+          
+          <hr style="border: none; border-top: 1.5px solid var(--line); margin: 12px 0;">
+          
+          <p><strong>Payment Status:</strong> <span class="status-badge status-${order.payment_status}">${order.payment_status}</span></p>
+          <p><strong>Order Status:</strong> <span class="status-badge status-${order.order_status}">${order.order_status}</span></p>
+          
+          <div style="margin-top: 16px; display: flex; gap: 8px;">
+            <button class="action-btn" onclick="updatePaymentStatus('${order.id}', 'paid')">Mark as Paid</button>
+            <button class="action-btn" onclick="updatePaymentStatus('${order.id}', 'rejected')">Reject Payment</button>
+            <button class="action-btn" onclick="updateOrderStatus('${order.id}', 'preparing')">Mark Preparing</button>
+            <button class="action-btn" onclick="updateOrderStatus('${order.id}', 'ready')">Mark Ready</button>
+            <button class="action-btn" onclick="updateOrderStatus('${order.id}', 'completed')">Mark Completed</button>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('orderModalContent').innerHTML = html;
+      openModal('orderModal');
+    }
+
+    async function updatePaymentStatus(orderId, status) {
+      try {
+        await supabase
+          .from('orders')
+          .update({ payment_status: status, updated_at: new Date().toISOString() })
+          .eq('id', orderId);
+
+        alert(`Payment status updated to ${status}`);
+        loadDashboard();
+        loadOrders();
+      } catch (e) {
+        console.error('Error updating payment:', e);
+      }
+    }
+
+    async function updateOrderStatus(orderId, status) {
+      try {
+        await supabase
+          .from('orders')
+          .update({ order_status: status, updated_at: new Date().toISOString() })
+          .eq('id', orderId);
+
+        alert(`Order status updated to ${status}`);
+        loadDashboard();
+        loadOrders();
+      } catch (e) {
+        console.error('Error updating order:', e);
+      }
+    }
+
+    // PRODUCTS
+    async function loadProducts() {
+      try {
+        const { data } = await supabase
+          .from('products')
+          .select('*')
+          .order('display_order');
+
+        allProducts = data || [];
+        renderProducts();
+      } catch (e) {
+        console.error('Error loading products:', e);
+      }
+    }
+
+    function renderProducts() {
+      const html = allProducts.map(product => `
+        <tr>
+          <td>${product.name}</td>
+          <td>${product.brand}</td>
+          <td>${product.category}</td>
+          <td>RM ${product.price.toFixed(2)}</td>
+          <td>${product.available ? '✓' : '✗'}</td>
+          <td>
+            <button class="action-btn" onclick="editProduct('${product.id}')">Edit</button>
+            <button class="action-btn danger" onclick="deleteProduct('${product.id}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+
+      document.getElementById('productsTable').innerHTML = html;
+    }
+
+    function openProductForm(productId = null) {
+      const product = productId ? allProducts.find(p => p.id === productId) : null;
+
+      const html = `
+        <div class="product-form">
+          <h3>${product ? 'Edit Product' : 'Add New Product'}</h3>
+          
+          <div class="form-group">
+            <label>Product Image</label>
+            <div class="image-preview" id="productImagePreview">
+              ${product?.image_url ? `<img src="${product.image_url}" alt="${product.name}">` : '<span style="color: var(--muted);">No image</span>'}
+            </div>
+            <input type="file" accept="image/*" onchange="previewImage(this, 'productImagePreview')">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Product Name *</label>
+              <input type="text" id="productName" value="${product?.name || ''}" placeholder="e.g., Pistachio Basque">
+            </div>
+            <div class="form-group">
+              <label>Brand *</label>
+              <select id="productBrand">
+                <option value="cbh" ${product?.brand === 'cbh' ? 'selected' : ''}>Cbakinghouse</option>
+                <option value="jrome" ${product?.brand === 'jrome' ? 'selected' : ''}>J.ROME Pastry</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Category *</label>
+              <select id="productCategory">
+                <option value="">Select Category</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Price (RM) *</label>
+              <input type="number" id="productPrice" value="${product?.price || ''}" placeholder="0.00" step="0.01">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="productDesc" rows="2" placeholder="Product description">${product?.description || ''}</textarea>
+          </div>
+
+          <div class="checkbox-group">
+            <input type="checkbox" id="productAvailable" ${product?.available !== false ? 'checked' : ''}>
+            <label for="productAvailable">Available</label>
+          </div>
+
+          <button class="btn-primary" onclick="saveProduct('${product?.id || ''}')">Save Product</button>
+          <button class="btn-secondary" onclick="closeProductForm()">Cancel</button>
+        </div>
+      `;
+
+      document.getElementById('productsForm').innerHTML = html;
+
+      // Load categories for selected brand
+      updateCategorySelect(product?.brand || 'cbh', product?.category);
+    }
+
+    function closeProductForm() {
+      document.getElementById('productsForm').innerHTML = '';
+    }
+
+    async function saveProduct(productId) {
+      const name = document.getElementById('productName').value;
+      const brand = document.getElementById('productBrand').value;
+      const category = document.getElementById('productCategory').value;
+      const price = parseFloat(document.getElementById('productPrice').value);
+      const description = document.getElementById('productDesc').value;
+      const available = document.getElementById('productAvailable').checked;
+
+      if (!name || !category || !price) {
+        alert('Please fill in required fields');
+        return;
+      }
+
+      try {
+        const data = {
+          name,
+          brand,
+          category,
+          price,
+          description,
+          available,
+          updated_at: new Date().toISOString()
+        };
+
+        if (productId) {
+          await supabase.from('products').update(data).eq('id', productId);
+          alert('Product updated successfully');
+        } else {
+          await supabase.from('products').insert([{ ...data, created_at: new Date().toISOString() }]);
+          alert('Product added successfully');
+        }
+
+        closeProductForm();
+        loadProducts();
+      } catch (e) {
+        console.error('Error saving product:', e);
+        alert('Error saving product');
+      }
+    }
+
+    function editProduct(productId) {
+      openProductForm(productId);
+    }
+
+    async function deleteProduct(productId) {
+      if (!confirm('Delete this product?')) return;
+
+      try {
+        await supabase.from('products').delete().eq('id', productId);
+        loadProducts();
+        alert('Product deleted');
+      } catch (e) {
+        console.error('Error deleting product:', e);
+      }
+    }
+
+    // CATEGORIES
+    async function loadCategories() {
+      try {
+        const { data } = await supabase
+          .from('categories')
+          .select('*')
+          .order('name');
+
+        allCategories = data || [];
+        renderCategories();
+      } catch (e) {
+        console.error('Error loading categories:', e);
+      }
+    }
+
+    function renderCategories() {
+      const html = allCategories.map(cat => `
+        <tr>
+          <td>${cat.name}</td>
+          <td>${cat.brand}</td>
+          <td>
+            <button class="action-btn danger" onclick="deleteCategory('${cat.id}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+
+      document.getElementById('categoriesTable').innerHTML = html;
+    }
+
+    function openCategoryForm() {
+      const name = prompt('Category name:');
+      const brand = prompt('Brand (cbh or jrome):');
+
+      if (name && brand) {
+        saveCategory(name, brand);
+      }
+    }
+
+    async function saveCategory(name, brand) {
+      try {
+        await supabase.from('categories').insert([{ name, brand }]);
+        loadCategories();
+        alert('Category added');
+      } catch (e) {
+        console.error('Error adding category:', e);
+      }
+    }
+
+    async function deleteCategory(catId) {
+      if (!confirm('Delete this category?')) return;
+
+      try {
+        await supabase.from('categories').delete().eq('id', catId);
+        loadCategories();
+        alert('Category deleted');
+      } catch (e) {
+        console.error('Error deleting category:', e);
+      }
+    }
+
+    // DELIVERY ZONES
+    async function loadZones() {
+      try {
+        const { data } = await supabase
+          .from('delivery_zones')
+          .select('*');
+
+        allZones = data || [];
+        renderZones();
+      } catch (e) {
+        console.error('Error loading zones:', e);
+      }
+    }
+
+    function renderZones() {
+      const html = allZones.map(zone => `
+        <tr>
+          <td>${zone.area}</td>
+          <td>${zone.postcode}</td>
+          <td>RM ${zone.fee.toFixed(2)}</td>
+          <td>
+            <button class="action-btn danger" onclick="deleteZone('${zone.id}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+
+      document.getElementById('zonesTable').innerHTML = html;
+    }
+
+    function openZoneForm() {
+      const area = prompt('Area name (e.g., Melaka City):');
+      const postcode = prompt('Postcode:');
+      const fee = parseFloat(prompt('Delivery fee (RM):'));
+
+      if (area && postcode && fee) {
+        saveZone(area, postcode, fee);
+      }
+    }
+
+    async function saveZone(area, postcode, fee) {
+      try {
+        await supabase.from('delivery_zones').insert([{ area, postcode, fee }]);
+        loadZones();
+        alert('Delivery zone added');
+      } catch (e) {
+        console.error('Error adding zone:', e);
+      }
+    }
+
+    async function deleteZone(zoneId) {
+      if (!confirm('Delete this zone?')) return;
+
+      try {
+        await supabase.from('delivery_zones').delete().eq('id', zoneId);
+        loadZones();
+        alert('Zone deleted');
+      } catch (e) {
+        console.error('Error deleting zone:', e);
+      }
+    }
+
+    // SETTINGS
+    async function loadSettings() {
+      try {
+        const { data: qrCBH } = await supabase.storage.from('qr-codes').getPublicUrl('qr-cbakinghouse.jpg');
+        if (qrCBH?.publicUrl) {
+          document.getElementById('qrPreviewCBH').innerHTML = `<img src="${qrCBH.publicUrl}" alt="QR CBH">`;
+        }
+
+        const { data: qrJROME } = await supabase.storage.from('qr-codes').getPublicUrl('qr-jrome.jpg');
+        if (qrJROME?.publicUrl) {
+          document.getElementById('qrPreviewJROME').innerHTML = `<img src="${qrJROME.publicUrl}" alt="QR JROME">`;
+        }
+
+        const { data: settings } = await supabase
+          .from('settings')
+          .select('*');
+
+        settings?.forEach(setting => {
+          if (setting.key === 'announcement') {
+            document.getElementById('announcementText').value = setting.value || '';
+          }
+          if (setting.key === 'welcome_popup') {
+            document.getElementById('popupTitle').value = setting.title || '';
+            document.getElementById('popupDesc').value = setting.description || '';
+            document.getElementById('popupEnabled').checked = setting.enabled !== false;
+            if (setting.image_url) {
+              document.getElementById('popupImagePreview').innerHTML = `<img src="${setting.image_url}" alt="Popup">`;
+            }
+          }
+        });
+      } catch (e) {
+        console.log('Settings load:', e);
+      }
+    }
+
+    async function uploadQR(brand, input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      try {
+        const filename = brand === 'cbh' ? 'qr-cbakinghouse.jpg' : 'qr-jrome.jpg';
+        
+        await supabase.storage
+          .from('qr-codes')
+          .upload(filename, file, { upsert: true });
+
+        const { data } = supabase.storage.from('qr-codes').getPublicUrl(filename);
+        
+        const previewId = brand === 'cbh' ? 'qrPreviewCBH' : 'qrPreviewJROME';
+        document.getElementById(previewId).innerHTML = `<img src="${data.publicUrl}" alt="QR">`;
+        
+        alert('QR code updated successfully');
+      } catch (e) {
+        console.error('Error uploading QR:', e);
+        alert('Error uploading QR code');
+      }
+    }
+
+    async function uploadPopupImage(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      try {
+        const filename = `popup-${Date.now()}.jpg`;
+        
+        await supabase.storage
+          .from('qr-codes')
+          .upload(filename, file);
+
+        const { data } = supabase.storage.from('qr-codes').getPublicUrl(filename);
+        document.getElementById('popupImagePreview').innerHTML = `<img src="${data.publicUrl}" alt="Popup">`;
+      } catch (e) {
+        console.error('Error uploading popup image:', e);
+      }
+    }
+
+    async function saveAnnouncement() {
+      const text = document.getElementById('announcementText').value;
+      try {
+        const { data: existing } = await supabase
+          .from('settings')
+          .select('*')
+          .eq('key', 'announcement')
+          .single();
+
+        if (existing) {
+          await supabase
+            .from('settings')
+            .update({ value: text })
+            .eq('key', 'announcement');
+        } else {
+          await supabase
+            .from('settings')
+            .insert([{ key: 'announcement', value: text }]);
+        }
+
+        alert('Announcement saved');
+      } catch (e) {
+        console.error('Error saving announcement:', e);
+      }
+    }
+
+    async function savePopup() {
+      const title = document.getElementById('popupTitle').value;
+      const description = document.getElementById('popupDesc').value;
+      const enabled = document.getElementById('popupEnabled').checked;
+
+      try {
+        const { data: existing } = await supabase
+          .from('settings')
+          .select('*')
+          .eq('key', 'welcome_popup')
+          .single();
+
+        const updateData = { title, description, enabled };
+
+        if (existing) {
+          await supabase
+            .from('settings')
+            .update(updateData)
+            .eq('key', 'welcome_popup');
+        } else {
+          await supabase
+            .from('settings')
+            .insert([{ key: 'welcome_popup', ...updateData }]);
+        }
+
+        alert('Popup saved');
+      } catch (e) {
+        console.error('Error saving popup:', e);
+      }
+    }
+
+    // UTILS
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    function openModal(modalId) {
+      document.getElementById(modalId).classList.add('active');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('active');
+    }
+
+    function previewImage(input, previewId) {
+      const file = input.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          document.getElementById(previewId).innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    async function updateCategorySelect(brand, selectedCategory = null) {
+      const categories = allCategories.filter(c => c.brand === brand);
+      const selectEl = document.getElementById('productCategory');
+      
+      if (selectEl) {
+        selectEl.innerHTML = '<option value="">Select Category</option>' + 
+          categories.map(c => `<option value="${c.name}" ${c.name === selectedCategory ? 'selected' : ''}>${c.name}</option>`).join('');
+      }
+    }
+
+    // STARTUP
+    init();
+  </script>
+</body>
+</html>
