@@ -256,7 +256,7 @@ async function saveProduct(){
   const errBox = document.getElementById('product-err');
   errBox.textContent = '';
   const brand_id = document.getElementById('pf-brand').value;
-  const category_id = document.getElementById('pf-category').value;
+  const category_id = document.getElementById('pf-category').value || null;
   const name = document.getElementById('pf-name').value.trim();
   const description = document.getElementById('pf-desc').value.trim();
   const price = parseFloat(document.getElementById('pf-price').value);
