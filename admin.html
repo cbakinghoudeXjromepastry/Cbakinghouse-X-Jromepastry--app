@@ -387,6 +387,7 @@ function renderSettings(){
     <div class="field"><label>Free delivery over (RM)</label><input type="number" step="1" id="s-free-threshold" value="${s.free_delivery_threshold}"></div>
     <div class="field"><label>Reward rate (e.g. 0.05 = 5% cashback to wallet)</label><input type="number" step="0.01" id="s-reward-rate" value="${s.reward_rate}"></div>
     <div class="field"><label>Welcome gift amount (RM)</label><input type="number" step="1" id="s-welcome-gift" value="${s.welcome_gift_amount}"></div>
+    <div class="field"><label>Referral bonus (RM, given to both people when a friend's first order is completed)</label><input type="number" step="1" id="s-referral-bonus" value="${s.referral_bonus||5}"></div>
     <button class="btn gold" onclick="saveSettings()">Save settings</button>
     <div class="err" id="settings-err"></div>
   `;
@@ -396,7 +397,8 @@ async function saveSettings(){
     delivery_fee: parseFloat(document.getElementById('s-delivery-fee').value),
     free_delivery_threshold: parseFloat(document.getElementById('s-free-threshold').value),
     reward_rate: parseFloat(document.getElementById('s-reward-rate').value),
-    welcome_gift_amount: parseFloat(document.getElementById('s-welcome-gift').value)
+    welcome_gift_amount: parseFloat(document.getElementById('s-welcome-gift').value),
+    referral_bonus: parseFloat(document.getElementById('s-referral-bonus').value)
   };
   const { error } = await sb.from('app_settings').update(payload).eq('id',1);
   const errBox = document.getElementById('settings-err');
