@@ -105,6 +105,9 @@
   .summary-row{ display:flex; justify-content:space-between; font-size:13px; padding:6px 0; color:var(--muted); }
   .summary-row.total{ color:var(--ink); font-weight:700; font-size:15px; border-top:1.5px dashed var(--line); margin-top:6px; padding-top:12px; }
   .summary-row .free{ color:var(--jrome-deep); font-weight:700; }
+  .promo-row{ display:flex; gap:8px; margin: 4px 20px 0; }
+  .promo-row input{ flex:1; padding:12px 14px; border-radius:14px; border:1.5px solid var(--line); font-size:12.5px; }
+  .promo-row button{ padding:0 16px; border-radius:14px; background:var(--ink); color:white; font-size:12px; }
 
   .primary-btn{ display:block; width:calc(100% - 40px); margin:18px 20px 4px; padding:16px; background:var(--ink); color:var(--cream); border-radius:18px; font-size:14.5px; font-weight:700; text-align:center; }
   .primary-btn:disabled{ opacity:.5; }
@@ -131,6 +134,27 @@
   .toast.show{ transform:translateX(-50%) translateY(0); }
 
   .loading{ text-align:center; padding:60px 20px; color:var(--muted); font-size:13px; }
+
+  /* ---------- Account screen ---------- */
+  .auth-toggle{ display:flex; margin: 16px 20px 4px; background:var(--white); border-radius:999px; padding:5px; border:1.5px solid var(--line); }
+  .auth-toggle button{ flex:1; padding:10px 8px; border-radius:999px; font-size:13px; color:var(--muted); }
+  .auth-toggle button.active{ background:var(--ink); color:var(--cream); }
+  .err-text{ color:#A24444; font-size:12px; padding: 0 20px; }
+  .wallet-hero{ margin:16px 20px; padding:24px 22px; border-radius:24px; background:linear-gradient(135deg, var(--sand) 0%, var(--cream) 100%); border:1.5px solid var(--line); text-align:center; }
+  .wallet-hero .lbl{ font-size:12.5px; color:var(--muted); font-weight:700; }
+  .wallet-hero .num{ font-size:40px; margin:4px 0 2px; color:var(--gold); }
+  .wallet-hero .sub{ font-size:12px; color:var(--muted); }
+  .referral-card{ margin:16px 20px; background:var(--ink); color:var(--cream); border-radius:22px; padding:20px; }
+  .referral-card h3{ font-size:15px; color:var(--cream); margin-bottom:6px; }
+  .referral-card p{ font-size:12px; color:#D9C8BE; line-height:1.5; margin-bottom:14px; }
+  .code-row{ display:flex; background:rgba(255,255,255,0.1); border-radius:14px; padding:12px 14px; align-items:center; justify-content:space-between; }
+  .code-row .code{ font-family:'Fraunces',serif; font-size:16px; letter-spacing:1px; }
+  .code-row button{ background:var(--gold); color:var(--ink); padding:7px 14px; border-radius:999px; font-size:11.5px; }
+  .wallet-tx{ display:flex; justify-content:space-between; padding:10px 20px; border-bottom:1px solid var(--line); font-size:12.5px; }
+  .wallet-tx .amt.pos{ color:var(--jrome-deep); font-weight:700; }
+  .wallet-tx .amt.neg{ color:#A24444; font-weight:700; }
+  .member-order{ margin:12px 20px; background:var(--white); border-radius:18px; border:1.5px solid var(--line); padding:14px 16px; }
+  .member-order .oh{ display:flex; justify-content:space-between; margin-bottom:6px; }
   .wa-row{ display:flex; gap:10px; margin:0 20px 18px; }
   .wa-row .primary-btn{ margin:0; }
 </style>
@@ -171,13 +195,18 @@
   <section class="screen" id="screen-about">
     <div class="topbar"><h1>About us</h1></div>
     <div class="section-sub" style="padding-top:0; line-height:1.6;">
-      Cbakinghouse and J.ROME Pastry are two sister brands from one little home bakery — warm breads on one side, delicate cakes and desserts on the other. Order from both at once, we'll get it ready for you.
+      Cbakinghouse and J.ROME Pastry are two brands from one little home bakery, run together by a couple — warm breads on one side, delicate cakes and desserts on the other. Order from both at once, we'll get it ready for you.
     </div>
     <div class="section-title">Reach us on WhatsApp</div>
     <div class="wa-row" style="flex-direction:column;">
       <a class="primary-btn wa" style="text-decoration:none;" href="https://wa.me/601110821733" target="_blank">Message Cbakinghouse</a>
       <a class="primary-btn wa" style="text-decoration:none;" href="https://wa.me/601176348554" target="_blank">Message J.ROME Pastry</a>
     </div>
+  </section>
+
+  <section class="screen" id="screen-account">
+    <div class="topbar"><h1>Your account</h1></div>
+    <div id="account-body"></div>
   </section>
 
   <div class="cart-pill hidden" id="cart-pill" onclick="goTo('cart')">
@@ -201,6 +230,10 @@
     <button class="navbtn" data-tab="about" onclick="goTo('about')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
       About <span class="dot"></span>
+    </button>
+    <button class="navbtn" data-tab="account" onclick="goTo('account')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1.5-4 4-6 7-6s5.5 2 7 6"/></svg>
+      Account <span class="dot"></span>
     </button>
   </nav>
 
@@ -247,7 +280,8 @@ let state = {
   fulfillment: 'delivery',
   address: '', name:'', phone:'', notes:'', date:'', time:'',
   brands: [], categories: [], products: [],
-  settings: { delivery_fee: 4.5, free_delivery_threshold: 35 }
+  settings: { delivery_fee: 4.5, free_delivery_threshold: 35 },
+  session: null, profile: null, useWallet: 0, couponCode: '', authMode: 'login', authErr: ''
 };
 
 async function loadData(){
@@ -390,6 +424,10 @@ function renderCart(){
   const sub = cartSubtotal();
   const fee = deliveryFee();
   const remaining = state.settings.free_delivery_threshold - sub;
+  const discount = state.appliedCoupon ? computeCouponDiscount(state.appliedCoupon, sub) : 0;
+  const walletCap = state.profile ? Math.min(state.profile.wallet_balance, Math.max(sub + fee - discount, 0)) : 0;
+  const walletUsed = Math.min(state.useWallet || 0, walletCap);
+  const total = Math.max(sub + fee - discount - walletUsed, 0);
 
   body.innerHTML = `
     ${itemsHtml}
@@ -416,14 +454,50 @@ function renderCart(){
     </div>
     <div class="field-block"><label>Notes (optional)</label><textarea rows="2" id="f-notes" oninput="state.notes=this.value" placeholder="Any special requests?"></textarea></div>
 
+    <div class="promo-row">
+      <input type="text" id="promo-input" placeholder="Coupon code" value="${state.couponCode||''}" oninput="state.couponCode=this.value">
+      <button onclick="applyCoupon()">Apply</button>
+    </div>
+    ${state.couponMsg ? `<div class="section-sub" style="padding-top:6px;">${state.couponMsg}</div>` : ''}
+
+    ${state.session ? `
+      <div class="field-block">
+        <label>Use wallet (balance: RM${Number(state.profile?.wallet_balance||0).toFixed(2)})</label>
+        <input type="number" step="0.10" min="0" id="f-wallet" value="${state.useWallet||''}" placeholder="0.00" oninput="state.useWallet=parseFloat(this.value)||0; renderCart()">
+      </div>
+    ` : `<div class="section-sub" style="padding-top:0;">Log in from the Account tab to use your wallet balance and earn rewards on this order.</div>`}
+
     <div class="summary">
       <div class="summary-row"><span>Subtotal</span><span>RM${sub.toFixed(2)}</span></div>
       <div class="summary-row"><span>${state.fulfillment==='delivery'?'Delivery fee':'Pickup'}</span>${fee===0?'<span class="free">Free</span>':`<span>RM${fee.toFixed(2)}</span>`}</div>
-      <div class="summary-row total"><span>Total</span><span>RM${(sub+fee).toFixed(2)}</span></div>
+      ${discount>0 ? `<div class="summary-row"><span>Coupon (${state.appliedCoupon.code})</span><span>-RM${discount.toFixed(2)}</span></div>` : ''}
+      ${walletUsed>0 ? `<div class="summary-row"><span>Wallet used</span><span>-RM${walletUsed.toFixed(2)}</span></div>` : ''}
+      <div class="summary-row total"><span>Total</span><span>RM${total.toFixed(2)}</span></div>
     </div>
 
-    <button class="primary-btn" id="checkout-btn" onclick="checkout()">Submit Order · RM${(sub+fee).toFixed(2)}</button>
+    <button class="primary-btn" id="checkout-btn" onclick="checkout()">Submit Order · RM${total.toFixed(2)}</button>
   `;
+}
+
+function computeCouponDiscount(coupon, sub){
+  if(sub < coupon.min_spend) return 0;
+  return coupon.discount_type === 'fixed' ? coupon.discount_value : round2(sub * coupon.discount_value / 100);
+}
+function round2(n){ return Math.round(n*100)/100; }
+
+async function applyCoupon(){
+  const code = (state.couponCode||'').trim().toUpperCase();
+  if(!code){ state.appliedCoupon=null; state.couponMsg=''; renderCart(); return; }
+  const { data, error } = await sb.from('coupons').select('*').eq('code', code).eq('active', true).maybeSingle();
+  if(error || !data){ state.appliedCoupon=null; state.couponMsg='Coupon not found or no longer active.'; renderCart(); return; }
+  if(data.expiry_date && new Date(data.expiry_date) < new Date()){ state.appliedCoupon=null; state.couponMsg='This coupon has expired.'; renderCart(); return; }
+  if(data.usage_limit!==null && data.used_count>=data.usage_limit){ state.appliedCoupon=null; state.couponMsg='This coupon has reached its usage limit.'; renderCart(); return; }
+  if(data.member_only && !state.session){ state.appliedCoupon=null; state.couponMsg='Log in to use this member-only coupon.'; renderCart(); return; }
+  const sub = cartSubtotal();
+  if(sub < data.min_spend){ state.appliedCoupon=null; state.couponMsg=`This coupon needs a minimum spend of RM${Number(data.min_spend).toFixed(2)}.`; renderCart(); return; }
+  state.appliedCoupon = data;
+  state.couponMsg = 'Coupon applied ✦';
+  renderCart();
 }
 
 /* ---------------- Checkout (writes a REAL order) ---------------- */
@@ -436,9 +510,14 @@ async function checkout(){
   btn.disabled = true; btn.textContent = 'Submitting…';
 
   const items = Object.values(state.cart).map(c => ({ product_id: c.product.id, quantity: c.qty, flavour: null }));
+  const sub = cartSubtotal();
+  const fee = deliveryFee();
+  const discount = state.appliedCoupon ? computeCouponDiscount(state.appliedCoupon, sub) : 0;
+  const walletCap = state.profile ? Math.min(state.profile.wallet_balance, Math.max(sub + fee - discount, 0)) : 0;
+  const walletUsed = Math.min(state.useWallet || 0, walletCap);
 
   const { data, error } = await sb.rpc('place_order', {
-    p_member_id: null,
+    p_member_id: state.session ? state.session.user.id : null,
     p_customer_name: state.name,
     p_phone: state.phone,
     p_notes: state.notes || null,
@@ -447,8 +526,8 @@ async function checkout(){
     p_fulfillment_time: state.time || null,
     p_address: state.fulfillment==='delivery' ? state.address : null,
     p_items: items,
-    p_wallet_use: 0,
-    p_coupon_code: null
+    p_wallet_use: walletUsed,
+    p_coupon_code: state.appliedCoupon ? state.appliedCoupon.code : null
   });
 
   if(error){
@@ -484,6 +563,8 @@ async function checkout(){
     <button class="primary-btn outline" style="margin-top:0;" onclick="location.reload()">Start a new order</button>
   `;
   state.cart = {};
+  state.appliedCoupon = null; state.couponCode = ''; state.couponMsg=''; state.useWallet = 0;
+  if(state.session) await loadProfile();
   renderCartPill(); renderGrid();
 }
 
@@ -509,13 +590,126 @@ async function trackOrder(){
     </div>`;
 }
 
-/* ---------------- Nav ---------------- */
+/* ---------------- Member account ---------------- */
+async function initSession(){
+  const { data: { session } } = await sb.auth.getSession();
+  state.session = session;
+  if(session) await loadProfile();
+}
+async function loadProfile(){
+  const { data } = await sb.from('profiles').select('*').eq('id', state.session.user.id).single();
+  state.profile = data;
+}
+function setAuthMode(mode){ state.authMode = mode; state.authErr=''; renderAccount(); }
+
+async function doSignUp(){
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const refCode = document.getElementById('auth-refcode')?.value.trim();
+  if(!email || !password){ state.authErr='Please fill in email and password.'; renderAccount(); return; }
+  const { data, error } = await sb.auth.signUp({ email, password, options: { data: refCode ? { referred_by_code: refCode } : {} } });
+  if(error){ state.authErr = error.message; renderAccount(); return; }
+  state.session = data.session;
+  if(state.session){ await loadProfile(); }
+  state.authErr = state.session ? '' : 'Check your email to confirm your account, then log in.';
+  renderAccount();
+}
+async function doLogIn(){
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){ state.authErr = error.message; renderAccount(); return; }
+  state.session = data.session;
+  await loadProfile();
+  renderAccount();
+}
+async function doSignOut(){
+  await sb.auth.signOut();
+  state.session = null; state.profile = null;
+  renderAccount();
+}
+async function claimWelcomeGift(){
+  const { data, error } = await sb.rpc('claim_welcome_gift');
+  if(error){ showToast('Something went wrong.'); return; }
+  if(data.claimed){ showToast(`Welcome gift added: RM${Number(data.amount).toFixed(2)} 🎁`); await loadProfile(); renderAccount(); }
+  else{ showToast('Welcome gift already claimed.'); }
+}
+function copyReferral(){
+  if(state.profile?.referral_code) showToast('Referral code: ' + state.profile.referral_code);
+}
+
+async function renderAccount(){
+  const body = document.getElementById('account-body');
+  if(!state.session){
+    body.innerHTML = `
+      <div class="auth-toggle">
+        <button class="${state.authMode==='login'?'active':''}" onclick="setAuthMode('login')">Log in</button>
+        <button class="${state.authMode==='signup'?'active':''}" onclick="setAuthMode('signup')">Sign up</button>
+      </div>
+      <div class="field-block"><label>Email</label><input type="email" id="auth-email"></div>
+      <div class="field-block"><label>Password</label><input type="password" id="auth-password"></div>
+      ${state.authMode==='signup' ? `<div class="field-block"><label>Referral code (optional)</label><input type="text" id="auth-refcode" placeholder="e.g. AB12CD"></div>` : ''}
+      ${state.authErr ? `<div class="err-text">${state.authErr}</div>` : ''}
+      <button class="primary-btn" onclick="${state.authMode==='login' ? 'doLogIn()' : 'doSignUp()'}">${state.authMode==='login' ? 'Log in' : 'Create account'}</button>
+      <div class="section-sub">Members earn wallet cashback on every order, get a welcome gift, and can refer friends for rewards.</div>
+    `;
+    return;
+  }
+
+  body.innerHTML = `<div class="loading">Loading your account…</div>`;
+  const [{ data: orders }, { data: txs }] = await Promise.all([
+    sb.from('orders').select('*, order_items(*)').eq('member_id', state.session.user.id).order('created_at', {ascending:false}),
+    sb.from('wallet_transactions').select('*').eq('member_id', state.session.user.id).order('created_at', {ascending:false}).limit(20)
+  ]);
+
+  const ordersHtml = (orders||[]).length ? orders.map(o=>`
+    <div class="member-order">
+      <div class="oh"><span style="font-family:'Fraunces',serif;">${o.order_number}</span><span class="status-badge ${o.status}">${o.status}</span></div>
+      <div class="order-items">${(o.order_items||[]).map(i=>`${i.product_name} ×${i.quantity}`).join('<br>')}</div>
+      <div class="order-total"><span>Total</span><span>RM${Number(o.total).toFixed(2)}</span></div>
+    </div>
+  `).join('') : `<div class="section-sub">No orders yet.</div>`;
+
+  const txHtml = (txs||[]).length ? txs.map(t=>`
+    <div class="wallet-tx"><span>${t.reason}</span><span class="amt ${t.amount>=0?'pos':'neg'}">${t.amount>=0?'+':''}RM${Number(t.amount).toFixed(2)}</span></div>
+  `).join('') : `<div class="section-sub">No wallet activity yet.</div>`;
+
+  body.innerHTML = `
+    <div class="section-sub" style="padding-top:0;">Signed in as ${state.session.user.email}</div>
+    <div class="wallet-hero">
+      <div class="lbl">Wallet balance</div>
+      <div class="num">RM${Number(state.profile?.wallet_balance||0).toFixed(2)}</div>
+      <div class="sub">Earn ${Math.round((state.settings.reward_rate||0)*100)}% cashback on every order</div>
+    </div>
+    ${!state.profile?.welcome_gift_claimed ? `<button class="primary-btn gold" onclick="claimWelcomeGift()">🎁 Claim your welcome gift</button>` : ''}
+
+    <div class="referral-card">
+      <h3>Share the love</h3>
+      <p>Give this code to a friend. When they place their first order, you both get RM100 added to your wallet.</p>
+      <div class="code-row">
+        <span class="code">${state.profile?.referral_code || '—'}</span>
+        <button onclick="copyReferral()">Copy</button>
+      </div>
+    </div>
+
+    <div class="section-title">Wallet history</div>
+    ${txHtml}
+
+    <div class="section-title">Your orders</div>
+    ${ordersHtml}
+
+    <button class="primary-btn outline" onclick="doSignOut()">Sign out</button>
+  `;
+}
+
+
 function goTo(tab){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
   document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
   document.querySelector(`.navbtn[data-tab="${tab}"]`).classList.add('active');
   if(tab==='cart') renderCart();
+  if(tab==='account') renderAccount();
   renderCartPill();
   window.scrollTo(0,0);
 }
@@ -528,6 +722,7 @@ function showToast(msg){
 }
 
 loadData();
+initSession();
 </script>
 </body>
 </html>
