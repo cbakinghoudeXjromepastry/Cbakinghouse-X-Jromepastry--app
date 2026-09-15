@@ -160,6 +160,7 @@
   .qr-card{ margin:0 20px 14px; background:var(--white); border-radius:20px; border:1.5px solid var(--line); padding:16px; text-align:center; }
   .qr-card img{ width:100%; max-width:220px; border-radius:12px; margin:8px 0; }
   .qr-card .brand-lbl{ font-weight:700; font-size:13px; }
+  .qr-save-link{ display:inline-block; margin-top:4px; font-size:12px; color:var(--cbh-deep); text-decoration:underline; font-weight:700; }
 </style>
 </head>
 <body>
@@ -211,10 +212,12 @@
     <div class="qr-card">
       <div class="brand-lbl">Cbakinghouse</div>
       <img id="qr-cbh" alt="Cbakinghouse DuitNow QR">
+      <br><a id="qr-cbh-save" class="qr-save-link" download="cbakinghouse-duitnow-qr.jpg">Save QR to Photos</a>
     </div>
     <div class="qr-card">
       <div class="brand-lbl">J.ROME Pastry</div>
       <img id="qr-jrome" alt="J.ROME Pastry DuitNow QR">
+      <br><a id="qr-jrome-save" class="qr-save-link" download="jrome-pastry-duitnow-qr.jpg">Save QR to Photos</a>
     </div>
   </section>
 
@@ -570,8 +573,8 @@ async function checkout(){
   if(jromeItems.length) waButtons += `<a class="primary-btn wa" style="text-decoration:none;" href="https://wa.me/601176348554?text=${buildMsg(jromeItems)}" target="_blank">Send to J.ROME Pastry on WhatsApp</a>`;
 
   let qrCards = '';
-  if(cbhItems.length) qrCards += `<div class="qr-card"><div class="brand-lbl">Cbakinghouse — scan to pay</div><img src="${QR_CODES.cbakinghouse}"></div>`;
-  if(jromeItems.length) qrCards += `<div class="qr-card"><div class="brand-lbl">J.ROME Pastry — scan to pay</div><img src="${QR_CODES.jrome}"></div>`;
+  if(cbhItems.length) qrCards += `<div class="qr-card"><div class="brand-lbl">Cbakinghouse — scan to pay</div><img src="${QR_CODES.cbakinghouse}"><br><a class="qr-save-link" download="cbakinghouse-duitnow-qr.jpg" href="${QR_CODES.cbakinghouse}">Save QR to Photos</a></div>`;
+  if(jromeItems.length) qrCards += `<div class="qr-card"><div class="brand-lbl">J.ROME Pastry — scan to pay</div><img src="${QR_CODES.jrome}"><br><a class="qr-save-link" download="jrome-pastry-duitnow-qr.jpg" href="${QR_CODES.jrome}">Save QR to Photos</a></div>`;
 
   document.getElementById('cart-body').innerHTML = `
     <div class="empty-state">
@@ -748,6 +751,8 @@ loadData();
 initSession();
 document.getElementById('qr-cbh').src = QR_CODES.cbakinghouse;
 document.getElementById('qr-jrome').src = QR_CODES.jrome;
+document.getElementById('qr-cbh-save').href = QR_CODES.cbakinghouse;
+document.getElementById('qr-jrome-save').href = QR_CODES.jrome;
 </script>
 </body>
 </html>
