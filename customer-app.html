@@ -354,7 +354,8 @@ function deliveryFee(){
 function renderCartPill(){
   const pill = document.getElementById('cart-pill');
   const cnt = cartCount();
-  if(cnt===0){ pill.classList.add('hidden'); return; }
+  const onCartScreen = document.getElementById('screen-cart').classList.contains('active');
+  if(cnt===0 || onCartScreen){ pill.classList.add('hidden'); return; }
   pill.classList.remove('hidden');
   document.getElementById('pill-cnt').textContent = cnt;
   document.getElementById('pill-total').textContent = 'RM'+cartSubtotal().toFixed(2);
@@ -515,6 +516,7 @@ function goTo(tab){
   document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
   document.querySelector(`.navbtn[data-tab="${tab}"]`).classList.add('active');
   if(tab==='cart') renderCart();
+  renderCartPill();
   window.scrollTo(0,0);
 }
 let toastTimer;
